@@ -150,7 +150,7 @@ h1{font-family:var(--f-fell);font-weight:400;font-size:clamp(2rem,5vw,3rem);line
 .slot{width:34px;height:34px;background:var(--perk);border:1px solid var(--line);display:grid;place-items:center}
 .slot span{transform:rotate(-45deg);font-family:var(--f-ui);font-weight:700;font-size:.8rem;color:var(--perk-ink)}
 .slot.filled{border-color:var(--ember);box-shadow:inset 0 0 0 1px var(--ember)}
-.slot.empty{opacity:.45}
+.slot.vacant{opacity:.45}
 .build h3{margin:0 0 6px;font-family:var(--f-ui);font-weight:700;font-size:1.3rem;line-height:1.15}
 .perks{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .perks li{font-size:.95rem}
@@ -190,3 +190,70 @@ h1{font-family:var(--f-fell);font-weight:400;font-size:clamp(2rem,5vw,3rem);line
 .slot.has-img{background:transparent;border-color:transparent;box-shadow:none}
 .iconrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
 .linkbtn{background:transparent;border:0;padding:0;color:var(--ember);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+header.top{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;grid-template-areas:"title title title rand" "search sort lang bulk";align-items:center;gap:14px 16px}
+header.top>div:first-child{grid-area:title;min-width:0}
+#randBtn{grid-area:rand;justify-self:end;white-space:nowrap}
+header.top .search{grid-area:search;flex:none;min-width:0;width:100%}
+header.top label.sort:nth-of-type(1){grid-area:sort}
+header.top label.sort:nth-of-type(2){grid-area:lang}
+#bulkBtn{grid-area:bulk;white-space:nowrap}
+.sort{white-space:nowrap}
+.tile:active{transform:scale(.985)}
+@media (hover:none){
+  .tile.img .bgimg,.tile.img:hover .bgimg{opacity:.5;transform:none}
+  .tile:hover{transform:none;box-shadow:none;border-color:var(--line)}
+  .tile.has:hover,.tile.found:hover{border-color:var(--blood)}
+  .tile:hover::before{opacity:0;transform:translateY(40%)}
+}
+@media (max-width:900px){
+  header.top{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"title title rand" "search search search" "sort lang bulk"}
+  .sort{justify-content:flex-start}
+  #bulkBtn{justify-self:end}
+}
+@media (max-width:640px){
+  .wrap{padding:18px 14px 36px}
+  header.top{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"title rand" "search search" "sort lang" "bulk bulk";gap:10px 12px;margin-bottom:16px}
+  h1{font-size:1.9rem}
+  .sub{font-size:.88rem}
+  #randBtn{align-self:start;padding:7px 12px}
+  .sort{flex-direction:column;align-items:stretch;gap:4px;font-size:.9rem}
+  .sort select{width:100%}
+  #bulkBtn{justify-self:stretch}
+  .search input,.sort select,#bform input,#bform textarea,#addForm input{font-size:16px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tile{min-height:100px;padding:12px}
+  .tile.has{padding-left:9px}
+  .tname{font-size:1.08rem}
+  .rel{top:8px;left:10px;font-size:.78rem}
+  .foot{font-size:.8rem}
+  .phead,.pbody{padding-left:16px;padding-right:16px}
+  .pbody{padding-top:14px}
+  .hero .htext{left:16px;right:16px}
+  .himg-actions{left:16px;top:14px}
+  .hero h2{font-size:2rem}
+  #bform{padding:12px}
+  .build{grid-template-columns:80px minmax(0,1fr);gap:12px;padding:16px 0}
+  .loadout{width:80px;height:80px}
+  .diamond{grid-template-columns:26px 26px;gap:4px}
+  .slot{width:26px;height:26px}
+  .slot span{font-size:.68rem}
+  .build h3{font-size:1.15rem}
+  .perks li{font-size:.9rem;flex-wrap:wrap;row-gap:0}
+  .pown{width:100%;margin-left:30px;padding-left:0;font-size:.75rem}
+  .sugg{max-height:260px}
+  .osub{white-space:normal}
+  .rand{padding:12px;align-items:end}
+  .rcard{padding:16px}
+  .rname{margin-top:12px}
+  .rfoot{flex-direction:column;align-items:stretch}
+  .ract{margin-left:0}
+  .ract .btn{flex:1}
+}
+@media (max-width:360px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  header.top{grid-template-areas:"title title" "rand rand" "search search" "sort lang" "bulk bulk"}
+  #randBtn{justify-self:stretch}
+}
+.slot{position:relative}
+.slot img,.slot.has-img img{position:absolute;left:50%;top:50%;width:141%;height:141%;transform:translate(-50%,-50%) rotate(-45deg);max-width:none}
+@media (max-width:640px){.ract .btn{white-space:nowrap;padding:10px 8px}}
