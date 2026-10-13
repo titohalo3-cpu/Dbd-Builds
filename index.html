@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Builds en la Niebla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IM+Fell+English&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Builds en la Niebla</h1>
+      <p class="sub" id="sub">Elige un asesino para ver o guardar sus builds.</p>
+    </div>
+    <button class="btn primary" id="randBtn" type="button">Killer aleatorio</button>
+    <div class="search">
+      <input id="q" type="search" placeholder="Buscar asesino, build o perk" aria-label="Buscar asesino, build o perk" autocomplete="off">
+    </div>
+    <label class="sort"><span>Ordenar</span>
+      <select id="sortSel" aria-label="Ordenar asesinos">
+        <option value="new">Más nuevos primero</option>
+        <option value="old">Más antiguos primero</option>
+        <option value="az">Alfabético</option>
+      </select>
+    </label>
+    <label class="sort"><span>Perks en</span>
+      <select id="langSel" aria-label="Idioma de las perks">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+    <button class="btn" id="bulkBtn" type="button" hidden>Importar imágenes</button>
+    <input type="file" id="bulkFile" accept="image/png,image/jpeg,image/webp" multiple hidden>
+  </header>
+
+  <div id="grid" class="grid" aria-live="polite"></div>
+  <form id="addForm" hidden>
+    <input id="addName" type="text" maxlength="60" placeholder="Nombre del asesino" aria-label="Nombre del asesino" required>
+    <button class="btn primary" type="submit">Añadir</button>
+    <button class="btn ghost" type="button" id="addCancel">Cancelar</button>
+  </form>
+  <p class="foot" id="foot">Cargando tus builds…</p>
+</div>
+
+<div id="scrim" hidden></div>
+<aside id="panel" role="dialog" aria-modal="true" aria-labelledby="pTitle" hidden>
+  <div class="pscroll">
+    <div class="hero" id="hero">
+      <div class="himg-actions" id="imgActions">
+        <button class="btn small" id="imgPick" type="button">Subir imagen</button>
+        <button class="btn small warn" id="imgRemove" type="button" hidden>Quitar imagen</button>
+      </div>
+      <button class="x" id="pClose" aria-label="Cerrar">✕</button>
+      <div class="htext"><h2 id="pTitle"></h2></div>
+    </div>
+    <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
+    <div class="pbody">
+      <div style="margin-bottom:16px"><button class="btn primary" id="newBuild">Nueva build</button></div>
+      <form id="bform" hidden>
+        <div class="field">
+          <label for="fName">Nombre de la build</label>
+          <input id="fName" type="text" maxlength="80" required placeholder="Ej. Slowdown de regresión">
+        </div>
+        <div class="field">
+          <label>Perks</label>
+          <div class="perkgrid">
+            <div class="pslot"><span class="pic slotpic" id="fI0"><span class="d"><span></span></span></span><input id="fP0" type="text" maxlength="60" placeholder="Busca la perk 1 (español o inglés)" aria-label="Perk 1" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX0" aria-label="Quitar perk 1" hidden>✕</button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI1"><span class="d"><span></span></span></span><input id="fP1" type="text" maxlength="60" placeholder="Busca la perk 2 (español o inglés)" aria-label="Perk 2" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX1" aria-label="Quitar perk 2" hidden>✕</button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI2"><span class="d"><span></span></span></span><input id="fP2" type="text" maxlength="60" placeholder="Busca la perk 3 (español o inglés)" aria-label="Perk 3" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX2" aria-label="Quitar perk 3" hidden>✕</button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI3"><span class="d"><span></span></span></span><input id="fP3" type="text" maxlength="60" placeholder="Busca la perk 4 (español o inglés)" aria-label="Perk 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX3" aria-label="Quitar perk 4" hidden>✕</button></div>
+          </div>
+          <div class="iconrow"><p class="hint" style="margin:0">Escribe en español o en inglés, o desplázate por la lista: están todas las perks, empezando por las de este asesino.</p>
+          <button class="linkbtn" type="button" id="iconBtn">Importar iconos de perks</button><input type="file" id="iconFile" accept="image/png,image/jpeg,image/webp" multiple hidden></div>
+        </div>
+        <div class="field">
+          <label for="fNotes">Notas (opcional)</label>
+          <textarea id="fNotes" maxlength="600" placeholder="Add-ons, ofrenda, cuándo usarla…"></textarea>
+        </div>
+        <div class="formact">
+          <button class="btn ghost" type="button" id="fCancel">Cancelar</button>
+          <button class="btn primary" type="submit" id="fSave">Guardar build</button>
+        </div>
+      </form>
+      <div id="blist"></div>
+      <div class="pfoot"><button class="btn small warn" id="removeChar" hidden>Quitar asesino</button></div>
+    </div>
+  </div>
+</aside>
+<div id="rand" class="rand" role="dialog" aria-modal="true" aria-labelledby="randTitle" hidden>
+  <div class="rcard">
+    <button class="x" id="randClose" type="button" aria-label="Cerrar">✕</button>
+    <p class="rkick">Killer aleatorio</p>
+    <div class="rstage"><img id="randImg" alt=""></div>
+    <h2 class="rname" id="randTitle" aria-live="polite"></h2>
+    <p class="rmeta" id="randMeta"></p>
+    <div class="rfoot">
+      <label class="rcheck"><input type="checkbox" id="randOnly"> Solo asesinos con builds</label>
+      <div class="ract">
+        <button class="btn" id="randAgain" type="button">Otra vez</button>
+        <button class="btn primary" id="randGo" type="button">Ver sus builds</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
