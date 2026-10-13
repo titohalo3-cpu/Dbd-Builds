@@ -250,7 +250,7 @@ function renderPanel(){
     const art=el("article","build");
     const lo=el("div","loadout");const dm=el("div","diamond");
     const perks=(b.perks||[]).slice(0,4);while(perks.length<4)perks.push("");
-    perks.forEach(p=>{const t=p?perkType(p):"";const s=el("div","slot "+(p?"filled":"empty")+(t?" "+t:""));s.title=p?perkLabel(p):"Vacío";const src=p?perkIconSrc(p):null;if(src){const im=document.createElement("img");im.alt="";im.src=src;s.appendChild(im);s.classList.add("has-img");}else s.appendChild(el("span",null,p?initials(perkLabel(p)):""));dm.appendChild(s);});
+    perks.forEach(p=>{const t=p?perkType(p):"";const s=el("div","slot "+(p?"filled":"vacant")+(t?" "+t:""));s.title=p?perkLabel(p):"Vacío";const src=p?perkIconSrc(p):null;if(src){const im=document.createElement("img");im.alt="";im.src=src;s.appendChild(im);s.classList.add("has-img");}else s.appendChild(el("span",null,p?initials(perkLabel(p)):""));dm.appendChild(s);});
     lo.appendChild(dm);lo.setAttribute("aria-hidden","true");
     const body=el("div");
     body.appendChild(el("h3",null,b.name));
@@ -427,7 +427,7 @@ $("removeChar").onclick=()=>{
 
 const formPerks=["","","",""];
 const sugg=el("ul","sugg");sugg.id="perkSugg";sugg.setAttribute("role","listbox");sugg.hidden=true;
-let comboIdx=-1,comboItems=[],comboActive=-1;
+let comboIdx=-1,comboItems=[],comboActive=-1,skipOpen=false;
 function setSlot(i,val){
   formPerks[i]=val||"";
   const inp=$("fP"+i);inp.value=val?perkLabel(val):"";
@@ -510,12 +510,13 @@ function pickCombo(k){
   const i=comboIdx,x=comboItems[k];if(i<0||!x)return;
   setSlot(i,x.perk?x.perk.en:x.key);closeCombo();
   const next=[0,1,2,3].find(j=>j>i&&!formPerks[j]);
-  if(next!==undefined)$("fP"+next).focus();else $("fNotes").focus();
+  skipOpen=true;if(next!==undefined)$("fP"+next).focus();else $("fNotes").focus();skipOpen=false;
 }
 sugg.addEventListener("mousedown",e=>{const li=e.target.closest(".opt");if(!li)return;e.preventDefault();pickCombo(+li.dataset.k);});
 [0,1,2,3].forEach(i=>{
   const inp=$("fP"+i);
-  inp.addEventListener("focus",()=>openCombo(i));
+  inp.addEventListener("focus",()=>{if(!skipOpen)openCombo(i);});
+  inp.addEventListener("click",()=>{if(sugg.hidden||comboIdx!==i)openCombo(i);});
   inp.addEventListener("input",()=>{formPerks[i]=inp.value.trim();$("fX"+i).hidden=!inp.value;const ic=$("fI"+i);ic.replaceWith(Object.assign(perkIcon(findPerk(inp.value)?inp.value:"","slotpic"),{id:"fI"+i}));openCombo(i);});
   inp.addEventListener("blur",()=>{setTimeout(()=>{if(comboIdx===i)closeCombo();const v=inp.value.trim();setSlot(i,v?(findPerk(v)?findPerk(v).en:v):"");},120);});
   inp.addEventListener("keydown",e=>{
