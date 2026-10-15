@@ -245,9 +245,10 @@ function renderPanel(){
   const q=norm(state.q.trim());
   const box=$("blist");box.textContent="";
   const list=buildsOf(c.id);
+  $("randBuild").hidden=!list.length;
   if(!list.length){box.appendChild(el("p","noBuilds","Todavía no hay builds para "+c.name+". Crea la primera con Nueva build."));return;}
   list.forEach(b=>{
-    const art=el("article","build");
+    const art=el("article","build");art.dataset.bid=b.id;
     const lo=el("div","loadout");const dm=el("div","diamond");
     const perks=(b.perks||[]).slice(0,4);while(perks.length<4)perks.push("");
     perks.forEach(p=>{const t=p?perkType(p):"";const s=el("div","slot "+(p?"filled":"vacant")+(t?" "+t:""));s.title=p?perkLabel(p):"Vacío";const src=p?perkIconSrc(p):null;if(src){const im=document.createElement("img");im.alt="";im.src=src;s.appendChild(im);s.classList.add("has-img");}else s.appendChild(el("span",null,p?initials(perkLabel(p)):""));dm.appendChild(s);});
@@ -263,7 +264,8 @@ function renderPanel(){
     const act=el("div","bact");
     const ed=el("button","btn small","Editar");ed.type="button";ed.dataset.act="edit";ed.dataset.bid=b.id;
     const del=el("button","btn small ghost","Borrar");del.type="button";del.dataset.act="del";del.dataset.bid=b.id;
-    act.append(ed,del);body.appendChild(act);
+    const cp=el("button","btn small","Copiar");cp.type="button";cp.dataset.act="copy";cp.dataset.bid=b.id;
+    act.append(ed,cp,del);body.appendChild(act);
     art.append(lo,body);box.appendChild(art);
   });
 }
@@ -408,6 +410,7 @@ $("blist").addEventListener("click",e=>{
   const b=e.target.closest("button[data-act]");if(!b)return;
   const cid=state.open,bid=b.dataset.bid;
   if(b.dataset.act==="edit"){const bd=buildsOf(cid).find(x=>x.id===bid);if(bd)showForm(bd);return;}
+  if(b.dataset.act==="copy"){const bd=buildsOf(cid).find(x=>x.id===bid);if(!bd)return;const t=buildText(bd);copiedBuild=t;try{localStorage.setItem("dbd-copied",t);}catch(e){}copyText(t).then(ok=>toast(ok?"Build copiada. Pégala con Pegar build en cualquier asesino.":"Build copiada en la app. Usa Pegar build en otro asesino."));return;}
   if(!armed[bid]){armed[bid]=true;b.textContent="Confirmar borrado";b.classList.add("warn");setTimeout(()=>{delete armed[bid];if(b.isConnected){b.textContent="Borrar";b.classList.remove("warn");}},3000);return;}
   delete armed[bid];
   state.builds={...state.builds,[cid]:buildsOf(cid).filter(x=>x.id!==bid)};
@@ -618,5 +621,50 @@ $("randAgain").onclick=rollRand;
 $("randOnly").addEventListener("change",rollRand);
 $("rand").addEventListener("click",e=>{if(e.target.id==="rand")closeRand();});
 $("randGo").onclick=()=>{const id=randPick;if(!id)return;closeRand();openPanel(id);if(!buildsOf(id).length)showForm(null);};
+let copiedBuild=null,lastRandBuild=null;try{copiedBuild=localStorage.getItem("dbd-copied");}catch(e){}
+function buildText(b){const perks=(b.perks||[]).filter(Boolean).map(p=>perkLabel(p));let t="Build: "+b.name+"\nPerks: "+perks.join(" / ");if(b.notes)t+="\nNotas: "+b.notes;return t;}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true;}catch(e){}
+  try{const ta=document.createElement("textarea");ta.value=t;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok;}catch(e){return false;}
+}
+function parseBuild(t){
+  if(!t)return null;
+  const lines=String(t).replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean);
+  let name="",perks=[],notes=[],mode=null;
+  lines.forEach(l=>{
+    const m=l.match(/^(build|nombre|name|perks|ventajas|notas|notes)\s*:\s*(.*)$/i);
+    if(m){const k=m[1].toLowerCase();
+      if(k==="perks"||k==="ventajas"){perks=m[2].split(/\s*[\/,|]\s*/).filter(Boolean);mode="perks";}
+      else if(k==="notas"||k==="notes"){notes.push(m[2]);mode="notes";}
+      else{name=m[2];mode="name";}}
+    else if(mode==="notes")notes.push(l);
+  });
+  if(!name&&!perks.length)return null;
+  return {name,perks:perks.slice(0,4).map(p=>{const f=findPerk(p);return f?f.en:p;}),notes:notes.join("\n")};
+}
+function fillFromPaste(b){
+  if(b.name)$("fName").value=b.name;
+  for(let i=0;i<4;i++)setSlot(i,b.perks[i]||"");
+  if(b.notes)$("fNotes").value=b.notes;
+  $("pasteBox").hidden=true;$("pasteBox").value="";
+  toast("Build pegada. Revísala y guárdala.");
+}
+$("pasteBtn").onclick=async()=>{
+  let t=null;try{t=await navigator.clipboard.readText();}catch(e){}
+  let b=parseBuild(t);if(!b&&copiedBuild)b=parseBuild(copiedBuild);
+  if(b){fillFromPaste(b);return;}
+  const box=$("pasteBox");box.hidden=false;box.focus();toast("Pega la build en el cuadro.");
+};
+$("pasteBox").addEventListener("input",e=>{const b=parseBuild(e.target.value);if(b)fillFromPaste(b);});
+$("fName").addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(!t||t.indexOf("\n")<0)return;const b=parseBuild(t);if(b){e.preventDefault();fillFromPaste(b);}});
+$("randBuild").onclick=()=>{
+  const list=buildsOf(state.open);if(!list.length)return;
+  const c=list.length>1?list.filter(b=>b.id!==lastRandBuild):list;
+  const pick=c[Math.floor(Math.random()*c.length)];lastRandBuild=pick.id;
+  $("blist").querySelectorAll(".build.picked").forEach(a=>a.classList.remove("picked"));
+  const art=[...$("blist").querySelectorAll(".build")].find(a=>a.dataset.bid===pick.id);
+  if(art){void art.offsetWidth;art.classList.add("picked");art.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});}
+  toast("Build aleatoria: "+pick.name);
+};
 init();
 })();
