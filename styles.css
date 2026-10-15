@@ -257,3 +257,10 @@ header.top label.sort:nth-of-type(2){grid-area:lang}
 .slot{position:relative}
 .slot img,.slot.has-img img{position:absolute;left:50%;top:50%;width:141%;height:141%;transform:translate(-50%,-50%) rotate(-45deg);max-width:none}
 @media (max-width:640px){.ract .btn{white-space:nowrap;padding:10px 8px}}
+.pactions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.pasterow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-bottom:12px}
+#bform #pasteBox{margin-bottom:12px;min-height:72px}
+.build.picked{animation:picked 1.8s ease-out;border-radius:3px}
+@keyframes picked{0%{background:transparent}20%{background:var(--blood-soft)}100%{background:transparent}}
+@media (prefers-reduced-motion: reduce){.build.picked{animation:none;background:var(--blood-soft)}}
+@media (max-width:640px){.pactions .btn{flex:1}}
