@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DBD Builds</title>
+<title>Dbd Buils</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IM+Fell+English&display=swap" rel="stylesheet">
@@ -59,8 +59,10 @@
     </div>
     <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
     <div class="pbody">
-      <div style="margin-bottom:16px"><button class="btn primary" id="newBuild">Nueva build</button></div>
+      <div class="pactions"><button class="btn primary" id="newBuild" type="button">Nueva build</button><button class="btn" id="randBuild" type="button" hidden>Build aleatoria</button></div>
       <form id="bform" hidden>
+        <div class="pasterow"><button class="linkbtn" type="button" id="pasteBtn">Pegar build</button><span class="hint" style="margin:0">Rellena el formulario con una build que hayas copiado.</span></div>
+        <textarea id="pasteBox" hidden placeholder="Pega aquí la build copiada" aria-label="Pegar build"></textarea>
         <div class="field">
           <label for="fName">Nombre de la build</label>
           <input id="fName" type="text" maxlength="80" required placeholder="Ej. Slowdown de regresión">
