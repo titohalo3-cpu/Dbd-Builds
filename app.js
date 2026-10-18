@@ -5,7 +5,9 @@ const BASE=KILLERS.map((n,i)=>({id:"k-"+slug(n),name:n,rel:i+1}));
 
 const DEFAULT_IMGS={"k-the-mastermind": "killers/the-mastermind.webp","k-the-unknown": "killers/the-unknown.webp","k-the-onryo": "killers/the-onryo.webp","k-the-dredge": "killers/the-dredge.webp","k-the-knight": "killers/the-knight.webp","k-the-skull-merchant": "killers/the-skull-merchant.webp","k-the-singularity": "killers/the-singularity.webp","k-the-krasue": "killers/the-krasue.webp","k-the-demogorgon": "killers/the-demogorgon.webp","k-the-first": "killers/the-first.webp","k-the-slasher": "killers/the-slasher.webp","k-the-judgment": "killers/the-judgment.webp","k-dracula": "killers/dracula.webp","k-the-ghoul": "killers/the-ghoul.webp","k-the-houndmaster": "killers/the-houndmaster.webp","k-the-animatronic": "killers/the-animatronic.webp","k-the-xenomorph": "killers/the-xenomorph.webp","k-the-lich-vecna": "killers/the-lich-vecna.webp","k-the-good-guy": "killers/the-good-guy.webp","k-the-hag": "killers/the-hag.webp","k-the-cannibal": "killers/the-cannibal.webp","k-the-nightmare": "killers/the-nightmare.webp","k-the-blight": "killers/the-blight.webp","k-the-clown": "killers/the-clown.webp","k-the-deathslinger": "killers/the-deathslinger.webp","k-the-doctor": "killers/the-doctor.webp","k-the-ghost-face": "killers/the-ghost-face.webp","k-the-hillbilly": "killers/the-hillbilly.webp","k-the-huntress": "killers/the-huntress.webp","k-the-legion": "killers/the-legion.webp","k-the-nemesis": "killers/the-nemesis.webp","k-the-nurse": "killers/the-nurse.webp","k-the-oni": "killers/the-oni.webp","k-the-pig": "killers/the-pig.webp","k-the-plague": "killers/the-plague.webp","k-the-executioner": "killers/the-executioner.webp","k-the-spirit": "killers/the-spirit.webp","k-the-artist": "killers/the-artist.webp","k-the-twins": "killers/the-twins.webp","k-the-trapper": "killers/the-trapper.webp","k-the-trickster": "killers/the-trickster.webp","k-the-wraith": "killers/the-wraith.webp","k-the-shape": "killers/the-shape.webp","k-the-cenobite": "killers/the-cenobite.webp"};
 let sortMode="new";try{const s=localStorage.getItem("dbd-sort");if(s=="new"||s=="old"||s=="az")sortMode=s;}catch(e){}
-const state={q:"",builds:{},imgs:{},perkIcons:{},custom:[],open:null,editing:null,mode:"loading"};
+const state={q:"",builds:{},localBuilds:{},imgs:{},perkIcons:{},custom:[],open:null,editing:null,mode:"loading",session:null,nick:"",filterMine:false};
+let sb=null;
+function myId(){return state.session&&state.session.user?state.session.user.id:null;}
 const $=id=>document.getElementById(id);
 const norm=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const sortKey=n=>n.replace(/^The\s+/i,"");
@@ -87,7 +89,7 @@ const LS="dbd-builds-v1";
 let col=null,assets=null;
 const queues={};
 function lsLoad(){try{const r=localStorage.getItem(LS);if(r){const d=JSON.parse(r);state.builds=d.builds||{};state.custom=(d.custom||[]).filter(c=>!c.role||c.role==="killer");state.imgs=d.imgs||{};state.perkIcons=d.perkIcons||{};}}catch(e){}}
-function lsSave(){try{localStorage.setItem(LS,JSON.stringify({builds:state.builds,custom:state.custom,imgs:state.imgs,perkIcons:state.perkIcons}));}catch(e){toast("No hay espacio suficiente en este navegador.");}}
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify({builds:sb?state.localBuilds:state.builds,custom:state.custom,imgs:state.imgs,perkIcons:state.perkIcons}));}catch(e){toast("No hay espacio suficiente en este navegador.");}}
 function enqueue(docId,fn){
   const prev=queues[docId]||Promise.resolve();
   queues[docId]=prev.then(fn).catch(err=>{
@@ -109,8 +111,7 @@ function saveRoster(){
   const ref=col.doc("roster");
   enqueue("roster",()=>ref.set({custom:state.custom}));
 }
-async function init(){
-  render();
+async function initClaude(){
   try{
     if(window.claude&&typeof window.claude.use==="function"){
       const [db,user,as]=await Promise.all([window.claude.use("db"),window.claude.use("user"),window.claude.use("assets")]);
@@ -194,7 +195,7 @@ function render(){
   const total=Object.values(state.builds).reduce((n,a)=>n+a.length,0);
   $("sub").textContent=total?(total===1?"1 build guardada. ":total+" builds guardadas. ")+"Elige un asesino para verlas.":"Elige un asesino para ver o guardar sus builds.";
   const tip=" Para poner imágenes, arrastra una sobre un asesino o usa Importar imágenes con archivos nombrados como el asesino (por ejemplo, trapper.png o the-nurse.jpg).";
-  $("foot").textContent=state.mode==="cloud"?"Tus builds se guardan en tu cuenta y solo las ves tú."+tip:state.mode==="local"?"Tus builds se guardan en este navegador."+tip:"Cargando tus builds…";
+  $("foot").textContent=sb?"Las builds son de la comunidad: cualquiera puede verlas. Para publicar las tuyas, entra con tu email."+tip:state.mode==="cloud"?"Tus builds se guardan en tu cuenta y solo las ves tú."+tip:state.mode==="local"?"Tus builds se guardan en este navegador."+tip:"Cargando tus builds…";
   $("bulkBtn").hidden=!canUpload();
   refreshPerkList();
 }
@@ -222,7 +223,7 @@ function closePanel(){
   else{$("scrim").classList.add("closing");$("panel").classList.add("closing");clearTimeout(closeT);closeT=setTimeout(finishClose,220);}
   if(lastFocus&&lastFocus.focus)lastFocus.focus();
 }
-function canUpload(){return state.mode!=="loading"&&(state.mode==="local"||!!col);}
+function canUpload(){return state.mode!=="loading"&&(state.mode==="local"||!!col||!!sb);}
 function renderHero(c){
   const hero=$("hero"),src=imgSrc(c.id);
   if(src!==lastHeroSrc){
@@ -244,9 +245,11 @@ function renderPanel(){
   $("removeChar").hidden=!c.custom;
   const q=norm(state.q.trim());
   const box=$("blist");box.textContent="";
-  const list=buildsOf(c.id);
-  $("randBuild").hidden=!list.length;
-  if(!list.length){box.appendChild(el("p","noBuilds","Todavía no hay builds para "+c.name+". Crea la primera con Nueva build."));return;}
+  const all=buildsOf(c.id),uid=myId();
+  const list=sb&&state.filterMine&&uid?all.filter(b=>b.userId===uid):all;
+  $("randBuild").hidden=!all.length;$("mineWrap").hidden=!(sb&&uid&&all.length);
+  if(!all.length){box.appendChild(el("p","noBuilds","Todavía no hay builds para "+c.name+". Crea la primera con Nueva build."));return;}
+  if(!list.length){box.appendChild(el("p","noBuilds","Aún no has publicado builds para "+c.name+"."));return;}
   list.forEach(b=>{
     const art=el("article","build");art.dataset.bid=b.id;
     const lo=el("div","loadout");const dm=el("div","diamond");
@@ -255,6 +258,8 @@ function renderPanel(){
     lo.appendChild(dm);lo.setAttribute("aria-hidden","true");
     const body=el("div");
     body.appendChild(el("h3",null,b.name));
+    const own=!sb||(uid&&b.userId===uid);
+    if(sb&&b.author)body.appendChild(el("p","bauthor",b.author+(own?" (tú)":"")));
     const ol=el("ol","perks");
     const filled=perks.filter(Boolean);
     if(!filled.length)ol.appendChild(el("li","none","Sin perks"));
@@ -265,7 +270,7 @@ function renderPanel(){
     const ed=el("button","btn small","Editar");ed.type="button";ed.dataset.act="edit";ed.dataset.bid=b.id;
     const del=el("button","btn small ghost","Borrar");del.type="button";del.dataset.act="del";del.dataset.bid=b.id;
     const cp=el("button","btn small","Copiar");cp.type="button";cp.dataset.act="copy";cp.dataset.bid=b.id;
-    act.append(ed,cp,del);body.appendChild(act);
+    if(own)act.append(ed,cp,del);else act.append(cp);body.appendChild(act);
     art.append(lo,body);box.appendChild(art);
   });
 }
@@ -388,8 +393,8 @@ $("addForm").addEventListener("submit",e=>{
 });
 $("scrim").onclick=closePanel;
 $("pClose").onclick=closePanel;
-document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("rand").hidden){closeRand();return;}if(state.open)closePanel();});
-$("newBuild").onclick=()=>showForm(null);
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("acc").hidden){closeAcc();return;}if(!$("rand").hidden){closeRand();return;}if(state.open)closePanel();});
+$("newBuild").onclick=()=>startNewBuild();
 $("fCancel").onclick=hideForm;
 $("bform").addEventListener("submit",e=>{
   e.preventDefault();
@@ -397,6 +402,7 @@ $("bform").addEventListener("submit",e=>{
   const name=$("fName").value.trim();if(!name){$("fName").focus();return;}
   const perks=[0,1,2,3].map(i=>{const v=$("fP"+i).value.trim();const f=findPerk(v);return f?f.en:v;});
   const notes=$("fNotes").value.trim();
+  if(sb){cloudSave(cid,{name,perks,notes});return;}
   const list=[...buildsOf(cid)];
   if(state.editing&&state.editing!=="new"){
     const i=list.findIndex(b=>b.id===state.editing);
@@ -413,6 +419,7 @@ $("blist").addEventListener("click",e=>{
   if(b.dataset.act==="copy"){const bd=buildsOf(cid).find(x=>x.id===bid);if(!bd)return;const t=buildText(bd);copiedBuild=t;try{localStorage.setItem("dbd-copied",t);}catch(e){}copyText(t).then(ok=>toast(ok?"Build copiada. Pégala con Pegar build en cualquier asesino.":"Build copiada en la app. Usa Pegar build en otro asesino."));return;}
   if(!armed[bid]){armed[bid]=true;b.textContent="Confirmar borrado";b.classList.add("warn");setTimeout(()=>{delete armed[bid];if(b.isConnected){b.textContent="Borrar";b.classList.remove("warn");}},3000);return;}
   delete armed[bid];
+  if(sb){cloudDelete(cid,bid);return;}
   state.builds={...state.builds,[cid]:buildsOf(cid).filter(x=>x.id!==bid)};
   saveChar(cid);render();renderPanel();toast("Build borrada.");
 });
@@ -620,7 +627,7 @@ $("randClose").onclick=closeRand;
 $("randAgain").onclick=rollRand;
 $("randOnly").addEventListener("change",rollRand);
 $("rand").addEventListener("click",e=>{if(e.target.id==="rand")closeRand();});
-$("randGo").onclick=()=>{const id=randPick;if(!id)return;closeRand();openPanel(id);if(!buildsOf(id).length)showForm(null);};
+$("randGo").onclick=()=>{const id=randPick;if(!id)return;closeRand();openPanel(id);if(!buildsOf(id).length)startNewBuild();};
 let copiedBuild=null,lastRandBuild=null;try{copiedBuild=localStorage.getItem("dbd-copied");}catch(e){}
 function buildText(b){const perks=(b.perks||[]).filter(Boolean).map(p=>perkLabel(p));let t="Build: "+b.name+"\nPerks: "+perks.join(" / ");if(b.notes)t+="\nNotas: "+b.notes;return t;}
 async function copyText(t){
@@ -666,5 +673,122 @@ $("randBuild").onclick=()=>{
   if(art){void art.offsetWidth;art.classList.add("picked");art.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});}
   toast("Build aleatoria: "+pick.name);
 };
+function rowToBuild(r){return {id:r.id,name:r.name,perks:Array.isArray(r.perks)?r.perks:[],notes:r.notes||"",author:r.author||"",userId:r.user_id,createdAt:Date.parse(r.created_at)||0};}
+let reloadT=null;
+function scheduleReload(){clearTimeout(reloadT);reloadT=setTimeout(loadCloud,400);}
+async function loadCloud(){
+  const {data,error}=await sb.from("builds").select("id,killer,name,perks,notes,author,user_id,created_at").order("created_at",{ascending:false}).limit(5000);
+  if(error){toast("No se pudieron cargar las builds de la comunidad.");return;}
+  const g={};data.forEach(r=>{(g[r.killer]=g[r.killer]||[]).push(rowToBuild(r));});
+  state.builds=g;render();renderPanel();
+}
+function setSession(s){
+  state.session=s||null;
+  const md=s&&s.user&&s.user.user_metadata||{};
+  state.nick=(md.nick||"").trim();
+  renderAccount();renderPanel();
+  if(!$("acc").hidden)fillAcc();
+}
+function renderAccount(){
+  const b=$("accBtn");if(!sb){b.hidden=true;return;}
+  b.hidden=false;b.textContent=state.session?(state.nick||"Mi cuenta"):"Entrar";
+}
+function localCount(){return Object.values(state.localBuilds||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);}
+let accReason="";
+function fillAcc(){
+  const logged=!!state.session;
+  $("loginForm").hidden=logged;$("nickForm").hidden=!logged;$("accLogged").hidden=!logged;
+  if(!logged){
+    $("accTitle").textContent="Entra para publicar";
+    $("accText").textContent=accReason||"Cualquiera puede ver las builds. Para publicar, editar o borrar las tuyas, entra con tu email: te enviamos un enlace y no necesitas contraseña.";
+  }else{
+    $("accTitle").textContent=state.nick||"Elige tu nombre";
+    $("accText").textContent=state.nick?"Has entrado como "+(state.session.user.email||"")+". Tu nombre aparece en las builds que publicas.":"Antes de publicar, elige el nombre que verán los demás en tus builds.";
+    $("accNick").value=state.nick;
+    const n=localCount();$("migrateBtn").hidden=!(n&&state.nick);$("migrateBtn").textContent=n===1?"Subir mi build local":"Subir mis "+n+" builds locales";
+  }
+}
+function openAcc(reason){accReason=reason||"";fillAcc();$("acc").hidden=false;setTimeout(()=>{const f=state.session?$("accNick"):$("accEmail");f.focus();},50);}
+function closeAcc(){$("acc").hidden=true;}
+function startNewBuild(){
+  if(sb&&!state.session){openAcc("Para publicar builds en la comunidad necesitas entrar con tu email.");return false;}
+  if(sb&&!state.nick){openAcc();return false;}
+  showForm(null);return true;
+}
+async function cloudSave(cid,b){
+  const btn=$("fSave");btn.disabled=true;
+  try{
+    let res;
+    if(state.editing&&state.editing!=="new")res=await sb.from("builds").update({name:b.name,perks:b.perks,notes:b.notes,updated_at:new Date().toISOString()}).eq("id",state.editing).select().single();
+    else res=await sb.from("builds").insert({killer:cid,name:b.name,perks:b.perks,notes:b.notes,author:state.nick}).select().single();
+    if(res.error)throw res.error;
+    const row=rowToBuild(res.data);
+    state.builds={...state.builds,[cid]:[row,...buildsOf(cid).filter(x=>x.id!==row.id)]};
+    hideForm();render();renderPanel();toast("Build publicada.");
+  }catch(err){toast(/limite/i.test(err&&err.message||"")?"Has llegado al máximo de builds que puedes publicar.":"No se pudo guardar la build. Inténtalo de nuevo.");}
+  finally{btn.disabled=false;}
+}
+async function cloudDelete(cid,bid){
+  const {error}=await sb.from("builds").delete().eq("id",bid);
+  if(error){toast("No se pudo borrar la build.");return;}
+  state.builds={...state.builds,[cid]:buildsOf(cid).filter(x=>x.id!==bid)};
+  render();renderPanel();toast("Build borrada.");
+}
+$("accBtn").onclick=()=>openAcc();
+$("accClose").onclick=closeAcc;
+$("acc").addEventListener("click",e=>{if(e.target.id==="acc")closeAcc();});
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const email=$("accEmail").value.trim();if(!email)return;
+  const btn=$("loginForm").querySelector("button");btn.disabled=true;
+  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+  btn.disabled=false;
+  if(error){toast("No se pudo enviar el enlace. Revisa el email o espera un poco.");return;}
+  $("accText").textContent="Te hemos enviado un enlace a "+email+". Ábrelo en este mismo dispositivo para entrar.";
+});
+$("nickForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const nick=$("accNick").value.trim().slice(0,30);if(!nick)return;
+  const btn=$("nickForm").querySelector("button");btn.disabled=true;
+  const {data,error}=await sb.auth.updateUser({data:{nick}});
+  btn.disabled=false;
+  if(error){toast("No se pudo guardar el nombre.");return;}
+  if(data&&data.user)state.session={...state.session,user:data.user};
+  state.nick=nick;renderAccount();fillAcc();
+  const uid=myId();if(uid)sb.from("builds").update({author:nick}).eq("user_id",uid).then(()=>scheduleReload());
+  toast("Nombre guardado.");
+});
+$("logoutBtn").onclick=async()=>{await sb.auth.signOut();closeAcc();toast("Has cerrado sesión.");};
+$("migrateBtn").onclick=async()=>{
+  const rows=[];
+  Object.entries(state.localBuilds||{}).forEach(([cid,arr])=>(arr||[]).forEach(b=>rows.push({killer:cid,name:String(b.name||"Build").slice(0,80),perks:(b.perks||[]).slice(0,4),notes:String(b.notes||"").slice(0,600),author:state.nick})));
+  if(!rows.length)return;
+  const btn=$("migrateBtn");btn.disabled=true;btn.textContent="Subiendo…";
+  for(let i=0;i<rows.length;i+=100){
+    const {error}=await sb.from("builds").insert(rows.slice(i,i+100));
+    if(error){btn.disabled=false;fillAcc();toast("No se pudieron subir todas las builds.");return;}
+  }
+  state.localBuilds={};lsSave();btn.disabled=false;fillAcc();await loadCloud();toast("Tus builds locales ya están en la comunidad.");
+};
+$("mineOnly").addEventListener("change",e=>{state.filterMine=e.target.checked;renderPanel();});
+async function init(){
+  render();
+  const cfg=window.DBD_CONFIG||{};
+  if(cfg.url&&cfg.key&&window.supabase&&typeof window.supabase.createClient==="function"){
+    try{
+      sb=window.supabase.createClient(cfg.url,cfg.key);
+      lsLoad();state.localBuilds=state.builds||{};state.builds={};state.mode="cloud";
+      renderAccount();
+      const {data}=await sb.auth.getSession();setSession(data&&data.session);
+      sb.auth.onAuthStateChange((ev,s)=>setSession(s));
+      await loadCloud();
+      sb.channel("builds-live").on("postgres_changes",{event:"*",schema:"public",table:"builds"},()=>scheduleReload()).subscribe();
+      document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleReload();});
+      return;
+    }catch(e){sb=null;toast("No se pudo conectar con la comunidad. Se usará el modo local.");}
+  }
+  renderAccount();
+  await initClaude();
+}
 init();
 })();
