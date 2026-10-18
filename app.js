@@ -691,7 +691,7 @@ function setSession(s){
 }
 function renderAccount(){
   const b=$("accBtn");if(!sb){b.hidden=true;return;}
-  b.hidden=false;b.textContent=state.session?(state.nick||"Mi cuenta"):"Entrar";
+  b.hidden=false;b.textContent=state.session?(state.nick||"Mi cuenta"):"Login";
 }
 function localCount(){return Object.values(state.localBuilds||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);}
 let accReason="";
@@ -699,7 +699,7 @@ function fillAcc(){
   const logged=!!state.session;
   $("loginForm").hidden=logged;$("nickForm").hidden=!logged;$("accLogged").hidden=!logged;
   if(!logged){
-    $("accTitle").textContent="Entra para publicar";
+    $("accTitle").textContent="Login";
     $("accText").textContent=accReason||"Cualquiera puede ver las builds. Para publicar, editar o borrar las tuyas, entra con tu email: te enviamos un enlace y no necesitas contraseña.";
   }else{
     $("accTitle").textContent=state.nick||"Elige tu nombre";
