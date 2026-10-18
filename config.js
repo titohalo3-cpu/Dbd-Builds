@@ -1,1 +1,1 @@
-window.DBD_CONFIG={url:"",key:""};
+window.DBD_CONFIG={url:"https://mpcjiebqrmymppasagnv.supabase.co",key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wY2ppZWJxcm15bXBwYXNhZ252Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMDg5NzcsImV4cCI6MjEwNzg4NDk3N30.Hsv7QE7EiuFnTmJ_cbTyDr0yRQXJBjiznpn9c11UQ6Y"};
