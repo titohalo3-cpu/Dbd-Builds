@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dbd Buils</title>
+<title>Dbd Builds</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IM+Fell+English&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
       <h1>Builds en la Niebla</h1>
       <p class="sub" id="sub">Elige un asesino para ver o guardar sus builds.</p>
     </div>
-    <button class="btn primary" id="randBtn" type="button">Killer aleatorio</button>
+    <div class="hbtns"><button class="btn" id="accBtn" type="button" hidden>Entrar</button><button class="btn primary" id="randBtn" type="button">Killer aleatorio</button></div>
     <div class="search">
       <input id="q" type="search" placeholder="Buscar asesino, build o perk" aria-label="Buscar asesino, build o perk" autocomplete="off">
     </div>
@@ -59,7 +59,7 @@
     </div>
     <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
     <div class="pbody">
-      <div class="pactions"><button class="btn primary" id="newBuild" type="button">Nueva build</button><button class="btn" id="randBuild" type="button" hidden>Build aleatoria</button></div>
+      <div class="pactions"><button class="btn primary" id="newBuild" type="button">Nueva build</button><button class="btn" id="randBuild" type="button" hidden>Build aleatoria</button><label class="rcheck mine" id="mineWrap" hidden><input type="checkbox" id="mineOnly"> Solo las mías</label></div>
       <form id="bform" hidden>
         <div class="pasterow"><button class="linkbtn" type="button" id="pasteBtn">Pegar build</button><span class="hint" style="margin:0">Rellena el formulario con una build que hayas copiado.</span></div>
         <textarea id="pasteBox" hidden placeholder="Pega aquí la build copiada" aria-label="Pegar build"></textarea>
@@ -108,8 +108,32 @@
     </div>
   </div>
 </div>
+<div id="acc" class="rand" role="dialog" aria-modal="true" aria-labelledby="accTitle" hidden>
+  <div class="rcard">
+    <button class="x" id="accClose" type="button" aria-label="Cerrar">✕</button>
+    <p class="rkick">Comunidad</p>
+    <h2 class="rname" id="accTitle">Entra para publicar</h2>
+    <p class="rmeta" id="accText"></p>
+    <form id="loginForm" class="accform">
+      <label for="accEmail">Email</label>
+      <input id="accEmail" type="email" required autocomplete="email" placeholder="tu@email.com">
+      <button class="btn primary" type="submit">Enviarme el enlace</button>
+    </form>
+    <form id="nickForm" class="accform" hidden>
+      <label for="accNick">Tu nombre en la comunidad</label>
+      <input id="accNick" type="text" maxlength="30" required placeholder="Ej. Miri">
+      <button class="btn primary" type="submit">Guardar nombre</button>
+    </form>
+    <div class="accrow" id="accLogged" hidden>
+      <button class="btn" id="migrateBtn" type="button" hidden></button>
+      <button class="btn warn" id="logoutBtn" type="button">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
 <div id="toast" role="status" hidden></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
