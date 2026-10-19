@@ -142,7 +142,7 @@ async function initClaude(){
   state.mode="local";lsLoad();render();
 }
 
-function allChars(){return [...BASE,...state.custom];}
+function allChars(){if(sb){const ids=new Set(state.custom.map(c=>c.id));return [...BASE,...state.custom,...(state.localCustom||[]).filter(c=>!ids.has(c.id)).map(c=>({...c,role:"killer",custom:true,localOnly:true}))];}return [...BASE,...state.custom];}
 function charById(id){return allChars().find(c=>c.id===id);}
 function buildsOf(id){return state.builds[id]||[];}
 function imgSrc(id){const i=state.imgs[id];if(i)return i.id?"/_blob/"+i.id:(i.data||DEFAULT_IMGS[id]||null);const k=sb&&state.custom.find(c=>c.id===id&&c.img);if(k)return k.img;return DEFAULT_IMGS[id]||null;}
@@ -378,7 +378,7 @@ $("imgRemove").onclick=()=>{
 };
 
 $("q").addEventListener("input",e=>{state.q=e.target.value;animateNext=true;render();});
-function relOf(c){if(c.rel)return c.rel;const i=state.custom.findIndex(x=>x.id===c.id);return BASE.length+1+(i<0?0:i);}
+function relOf(c){if(c.rel)return c.rel;const i=allChars().filter(x=>!x.rel).findIndex(x=>x.id===c.id);return BASE.length+1+(i<0?0:i);}
 $("sortSel").value=sortMode;
 $("sortSel").addEventListener("change",e=>{sortMode=e.target.value;try{localStorage.setItem("dbd-sort",sortMode);}catch(err){}render();});
 $("grid").addEventListener("click",e=>{
@@ -433,7 +433,8 @@ $("removeChar").onclick=()=>{
   const c=charById(state.open);if(!c||!c.custom)return;
   if(!removeArmed){removeArmed=true;$("removeChar").textContent="Confirmar: quitar asesino y sus builds";setTimeout(()=>{removeArmed=false;$("removeChar").textContent="Quitar asesino";},3500);return;}
   removeArmed=false;$("removeChar").textContent="Quitar asesino";
-  if(sb){cloudRemoveKiller(c);return;}
+  if(sb&&c.shared){cloudRemoveKiller(c);return;}
+  if(sb&&c.localOnly){state.localCustom=state.localCustom.filter(x=>x.id!==c.id);const ni={...state.imgs};delete ni[c.id];state.imgs=ni;lsSave();closePanel();render();toast("Asesino quitado.");return;}
   const prev=state.imgs[c.id];if(prev&&prev.id&&assets)assets.delete(prev.id).catch(()=>{});
   state.custom=state.custom.filter(x=>x.id!==c.id);
   const nb={...state.builds};delete nb[c.id];state.builds=nb;
@@ -711,6 +712,29 @@ async function cloudRemoveKiller(c){
   const nb={...state.builds};delete nb[c.id];state.builds=nb;
   closePanel();render();toast("Asesino quitado.");
 }
+let syncing=false;
+async function syncLocalKillers(){
+  if(syncing||!sb||!state.session||!state.nick||!(state.localCustom||[]).length)return;
+  syncing=true;let moved=0;
+  try{
+    for(const c of [...state.localCustom]){
+      let row=state.custom.find(x=>x.id===c.id);
+      if(!row){
+        const {data,error}=await sb.from("killers").insert({id:c.id,name:String(c.name).slice(0,60),author:state.nick}).select().single();
+        if(error)continue;
+        row=rowToKiller(data);state.custom=[...state.custom,row];
+      }
+      if(row.userId!==myId())continue;
+      const li=state.imgs[c.id];
+      if(li&&li.data&&!row.imgPath){
+        try{const blob=await (await fetch(li.data)).blob();await uploadKillerImage(row,blob);const ni={...state.imgs};delete ni[c.id];state.imgs=ni;}
+        catch(e){continue;}
+      }
+      state.localCustom=state.localCustom.filter(x=>x.id!==c.id);moved++;
+    }
+  }finally{syncing=false;}
+  if(moved){lsSave();render();renderPanel();toast(moved===1?"Tu asesino ya es visible para todos.":"Tus "+moved+" asesinos ya son visibles para todos.");}
+}
 async function loadCloud(){
   const [res,kres]=await Promise.all([
     sb.from("builds").select("id,killer,name,perks,notes,author,user_id,created_at").order("created_at",{ascending:false}).limit(5000),
@@ -721,6 +745,7 @@ async function loadCloud(){
   if(error){toast("No se pudieron cargar las builds de la comunidad.");render();renderPanel();return;}
   const g={};data.forEach(r=>{(g[r.killer]=g[r.killer]||[]).push(rowToBuild(r));});
   state.builds=g;render();renderPanel();
+  syncLocalKillers();
 }
 function setSession(s){
   state.session=s||null;
@@ -728,6 +753,7 @@ function setSession(s){
   state.nick=(md.nick||"").trim();
   renderAccount();renderPanel();
   if(!$("acc").hidden)fillAcc();
+  syncLocalKillers();
 }
 function renderAccount(){
   const b=$("accBtn");if(!sb){b.hidden=true;return;}
@@ -805,13 +831,12 @@ $("migrateBtn").onclick=async()=>{
   Object.entries(state.localBuilds||{}).forEach(([cid,arr])=>(arr||[]).forEach(b=>rows.push({killer:cid,name:String(b.name||"Build").slice(0,80),perks:(b.perks||[]).slice(0,4),notes:String(b.notes||"").slice(0,600),author:state.nick})));
   if(!rows.length&&!(state.localCustom||[]).length)return;
   const btn=$("migrateBtn");btn.disabled=true;btn.textContent="Subiendo…";
-  const kr=(state.localCustom||[]).map(c=>({id:c.id,name:String(c.name).slice(0,60),author:state.nick}));
-  if(kr.length){const {error}=await sb.from("killers").upsert(kr,{onConflict:"id",ignoreDuplicates:true});if(error){btn.disabled=false;fillAcc();toast("No se pudieron subir tus asesinos.");return;}}
+  await syncLocalKillers();
   for(let i=0;i<rows.length;i+=100){
     const {error}=await sb.from("builds").insert(rows.slice(i,i+100));
     if(error){btn.disabled=false;fillAcc();toast("No se pudieron subir todas las builds.");return;}
   }
-  state.localBuilds={};state.localCustom=[];lsSave();btn.disabled=false;fillAcc();await loadCloud();toast("Tus builds locales ya están en la comunidad.");
+  state.localBuilds={};lsSave();btn.disabled=false;fillAcc();await loadCloud();toast("Tus builds locales ya están en la comunidad.");
 };
 $("mineOnly").addEventListener("change",e=>{state.filterMine=e.target.checked;renderPanel();});
 async function init(){
