@@ -5,7 +5,7 @@ const BASE=KILLERS.map((n,i)=>({id:"k-"+slug(n),name:n,rel:i+1}));
 
 const DEFAULT_IMGS={"k-the-mastermind": "killers/the-mastermind.webp","k-the-unknown": "killers/the-unknown.webp","k-the-onryo": "killers/the-onryo.webp","k-the-dredge": "killers/the-dredge.webp","k-the-knight": "killers/the-knight.webp","k-the-skull-merchant": "killers/the-skull-merchant.webp","k-the-singularity": "killers/the-singularity.webp","k-the-krasue": "killers/the-krasue.webp","k-the-demogorgon": "killers/the-demogorgon.webp","k-the-first": "killers/the-first.webp","k-the-slasher": "killers/the-slasher.webp","k-the-judgment": "killers/the-judgment.webp","k-dracula": "killers/dracula.webp","k-the-ghoul": "killers/the-ghoul.webp","k-the-houndmaster": "killers/the-houndmaster.webp","k-the-animatronic": "killers/the-animatronic.webp","k-the-xenomorph": "killers/the-xenomorph.webp","k-the-lich-vecna": "killers/the-lich-vecna.webp","k-the-good-guy": "killers/the-good-guy.webp","k-the-hag": "killers/the-hag.webp","k-the-cannibal": "killers/the-cannibal.webp","k-the-nightmare": "killers/the-nightmare.webp","k-the-blight": "killers/the-blight.webp","k-the-clown": "killers/the-clown.webp","k-the-deathslinger": "killers/the-deathslinger.webp","k-the-doctor": "killers/the-doctor.webp","k-the-ghost-face": "killers/the-ghost-face.webp","k-the-hillbilly": "killers/the-hillbilly.webp","k-the-huntress": "killers/the-huntress.webp","k-the-legion": "killers/the-legion.webp","k-the-nemesis": "killers/the-nemesis.webp","k-the-nurse": "killers/the-nurse.webp","k-the-oni": "killers/the-oni.webp","k-the-pig": "killers/the-pig.webp","k-the-plague": "killers/the-plague.webp","k-the-executioner": "killers/the-executioner.webp","k-the-spirit": "killers/the-spirit.webp","k-the-artist": "killers/the-artist.webp","k-the-twins": "killers/the-twins.webp","k-the-trapper": "killers/the-trapper.webp","k-the-trickster": "killers/the-trickster.webp","k-the-wraith": "killers/the-wraith.webp","k-the-shape": "killers/the-shape.webp","k-the-cenobite": "killers/the-cenobite.webp"};
 let sortMode="new";try{const s=localStorage.getItem("dbd-sort");if(s=="new"||s=="old"||s=="az")sortMode=s;}catch(e){}
-const state={q:"",builds:{},localBuilds:{},imgs:{},perkIcons:{},custom:[],open:null,editing:null,mode:"loading",session:null,nick:"",filterMine:false};
+const state={q:"",builds:{},localBuilds:{},imgs:{},perkIcons:{},custom:[],localCustom:[],open:null,editing:null,mode:"loading",session:null,nick:"",filterMine:false};
 let sb=null;
 function myId(){return state.session&&state.session.user?state.session.user.id:null;}
 const $=id=>document.getElementById(id);
@@ -89,7 +89,7 @@ const LS="dbd-builds-v1";
 let col=null,assets=null;
 const queues={};
 function lsLoad(){try{const r=localStorage.getItem(LS);if(r){const d=JSON.parse(r);state.builds=d.builds||{};state.custom=(d.custom||[]).filter(c=>!c.role||c.role==="killer");state.imgs=d.imgs||{};state.perkIcons=d.perkIcons||{};}}catch(e){}}
-function lsSave(){try{localStorage.setItem(LS,JSON.stringify({builds:sb?state.localBuilds:state.builds,custom:state.custom,imgs:state.imgs,perkIcons:state.perkIcons}));}catch(e){toast("No hay espacio suficiente en este navegador.");}}
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify({builds:sb?state.localBuilds:state.builds,custom:sb?state.localCustom:state.custom,imgs:state.imgs,perkIcons:state.perkIcons}));}catch(e){toast("No hay espacio suficiente en este navegador.");}}
 function enqueue(docId,fn){
   const prev=queues[docId]||Promise.resolve();
   queues[docId]=prev.then(fn).catch(err=>{
@@ -145,7 +145,7 @@ async function initClaude(){
 function allChars(){return [...BASE,...state.custom];}
 function charById(id){return allChars().find(c=>c.id===id);}
 function buildsOf(id){return state.builds[id]||[];}
-function imgSrc(id){const i=state.imgs[id];if(i)return i.id?"/_blob/"+i.id:(i.data||DEFAULT_IMGS[id]||null);return DEFAULT_IMGS[id]||null;}
+function imgSrc(id){const i=state.imgs[id];if(i)return i.id?"/_blob/"+i.id:(i.data||DEFAULT_IMGS[id]||null);const k=sb&&state.custom.find(c=>c.id===id&&c.img);if(k)return k.img;return DEFAULT_IMGS[id]||null;}
 function matches(c,q){
   if(!q)return true;
   if(norm(c.name).includes(q))return true;
@@ -232,9 +232,9 @@ function renderHero(c){
     lastHeroSrc=src;
   }
   hero.classList.toggle("noimg",!src);
-  $("imgActions").hidden=!canUpload();
+  $("imgActions").hidden=!canUpload()||!ownsKiller(c);
   $("imgPick").textContent=src?"Cambiar imagen":"Subir imagen";
-  $("imgRemove").hidden=!state.imgs[c.id];
+  $("imgRemove").hidden=!(state.imgs[c.id]||(sb&&c.shared&&ownsKiller(c)&&c.imgPath));
   $("imgRemove").textContent=DEFAULT_IMGS[c.id]?"Volver a la original":"Quitar imagen";
 }
 function renderPanel(){
@@ -242,7 +242,7 @@ function renderPanel(){
   const c=charById(state.open);if(!c){closePanel();return;}
   $("pTitle").textContent=c.name;
   renderHero(c);
-  $("removeChar").hidden=!c.custom;
+  $("removeChar").hidden=!c.custom||!ownsKiller(c);
   const q=norm(state.q.trim());
   const box=$("blist");box.textContent="";
   const all=buildsOf(c.id),uid=myId();
@@ -301,6 +301,8 @@ function resizeImage(file,max,q){
 $("imgPick").onclick=()=>$("imgFile").click();
 async function setImage(cid,file){
   if(!file||!/^image\/(png|jpeg|webp)$/.test(file.type))throw {code:"bad_type"};
+  const ck=sb&&state.custom.find(c=>c.id===cid&&c.shared);
+  if(ck){if(!ownsKiller(ck))throw {code:"not_owner"};await uploadKillerImage(ck,file);return;}
   const prev=state.imgs[cid];
   if(assets){
     const {blob}=await resizeImage(file,1200,.86);
@@ -313,7 +315,7 @@ async function setImage(cid,file){
   }
   saveChar(cid);
 }
-function imgErr(err){const c=err&&err.code;return c==="bad_type"?"Usa una imagen PNG, JPG o WebP.":c==="quota_exceeded"?"No queda espacio para más imágenes. Quita alguna y vuelve a probar.":"No se pudo subir la imagen. Prueba con otra.";}
+function imgErr(err){const c=err&&err.code;return c==="not_owner"?"Solo quien añadió este asesino puede cambiar su imagen.":c==="bad_type"?"Usa una imagen PNG, JPG o WebP.":c==="quota_exceeded"?"No queda espacio para más imágenes. Quita alguna y vuelve a probar.":"No se pudo subir la imagen. Prueba con otra.";}
 $("imgFile").addEventListener("change",async e=>{
   const file=e.target.files&&e.target.files[0];e.target.value="";
   const cid=state.open;if(!file||!cid)return;
@@ -368,6 +370,8 @@ $("imgRemove").onclick=()=>{
   const cid=state.open;if(!cid)return;
   if(!imgArmed){imgArmed=true;$("imgRemove").textContent="Confirmar";setTimeout(()=>{imgArmed=false;if(state.open)renderHero(charById(state.open));},3000);return;}
   imgArmed=false;
+  const ck=sb&&state.custom.find(c=>c.id===cid&&c.shared);
+  if(!state.imgs[cid]&&ck&&ck.imgPath){const pth=ck.imgPath;sb.from("killers").update({img_path:null}).eq("id",cid).then(({error})=>{if(error){toast("No se pudo quitar la imagen.");return;}sb.storage.from("killers").remove([pth]);state.custom=state.custom.map(c=>c.id===cid?{...c,imgPath:null,img:null}:c);render();renderPanel();toast("Imagen quitada.");});return;}
   const prev=state.imgs[cid];const ni={...state.imgs};delete ni[cid];state.imgs=ni;
   if(prev&&prev.id&&assets)assets.delete(prev.id).catch(()=>{});
   saveChar(cid);render();renderPanel();toast("Imagen quitada.");
@@ -379,7 +383,7 @@ $("sortSel").value=sortMode;
 $("sortSel").addEventListener("change",e=>{sortMode=e.target.value;try{localStorage.setItem("dbd-sort",sortMode);}catch(err){}render();});
 $("grid").addEventListener("click",e=>{
   const t=e.target.closest(".tile");if(!t)return;
-  if(t.id==="addTile"){$("addForm").hidden=false;$("addName").focus();return;}
+  if(t.id==="addTile"){if(sb&&!state.session){openAcc("Para añadir asesinos para todos necesitas hacer login.");return;}if(sb&&!state.nick){openAcc();return;}$("addForm").hidden=false;$("addName").focus();return;}
   openPanel(t.dataset.id);
 });
 $("addCancel").onclick=()=>{$("addForm").hidden=true;$("addName").value="";};
@@ -387,6 +391,7 @@ $("addForm").addEventListener("submit",e=>{
   e.preventDefault();
   const name=$("addName").value.trim();if(!name)return;
   if(allChars().some(c=>norm(c.name)===norm(name))){toast("Ese asesino ya está en la lista.");return;}
+  if(sb){cloudAddKiller(name);return;}
   const c={id:"kc-"+(slug(name)||"x")+"-"+uidGen().slice(-4),name,role:"killer",custom:true};
   state.custom=[...state.custom,c];saveRoster();
   $("addName").value="";$("addForm").hidden=true;render();toast("Asesino añadido.");
@@ -428,6 +433,7 @@ $("removeChar").onclick=()=>{
   const c=charById(state.open);if(!c||!c.custom)return;
   if(!removeArmed){removeArmed=true;$("removeChar").textContent="Confirmar: quitar asesino y sus builds";setTimeout(()=>{removeArmed=false;$("removeChar").textContent="Quitar asesino";},3500);return;}
   removeArmed=false;$("removeChar").textContent="Quitar asesino";
+  if(sb){cloudRemoveKiller(c);return;}
   const prev=state.imgs[c.id];if(prev&&prev.id&&assets)assets.delete(prev.id).catch(()=>{});
   state.custom=state.custom.filter(x=>x.id!==c.id);
   const nb={...state.builds};delete nb[c.id];state.builds=nb;
@@ -676,9 +682,43 @@ $("randBuild").onclick=()=>{
 function rowToBuild(r){return {id:r.id,name:r.name,perks:Array.isArray(r.perks)?r.perks:[],notes:r.notes||"",author:r.author||"",userId:r.user_id,createdAt:Date.parse(r.created_at)||0};}
 let reloadT=null;
 function scheduleReload(){clearTimeout(reloadT);reloadT=setTimeout(loadCloud,400);}
+function rowToKiller(r){const url=r.img_path?sb.storage.from("killers").getPublicUrl(r.img_path).data.publicUrl:null;return {id:r.id,name:r.name,role:"killer",custom:true,shared:true,userId:r.user_id,author:r.author||"",imgPath:r.img_path||null,img:url};}
+function ownsKiller(c){return !sb||!c.shared||c.userId===myId();}
+async function uploadKillerImage(ck,file){
+  const {blob}=await resizeImage(file,1200,.86);
+  const path=myId()+"/"+ck.id+"-"+Date.now()+".jpg";
+  const up=await sb.storage.from("killers").upload(path,blob,{contentType:"image/jpeg",upsert:false});
+  if(up.error)throw up.error;
+  const {error}=await sb.from("killers").update({img_path:path}).eq("id",ck.id);
+  if(error){sb.storage.from("killers").remove([path]);throw error;}
+  if(ck.imgPath)sb.storage.from("killers").remove([ck.imgPath]);
+  state.custom=state.custom.map(c=>c.id===ck.id?{...c,imgPath:path,img:sb.storage.from("killers").getPublicUrl(path).data.publicUrl}:c);
+}
+async function cloudAddKiller(name){
+  if(!state.session){openAcc("Para añadir asesinos para todos necesitas hacer login.");return;}
+  if(!state.nick){openAcc();return;}
+  const id="kc-"+(slug(name)||"x").slice(0,60)+"-"+uidGen().slice(-4);
+  const {data,error}=await sb.from("killers").insert({id,name,author:state.nick}).select().single();
+  if(error){toast(error.code==="23505"?"Ese asesino ya existe.":/limite/i.test(error.message||"")?"Has llegado al máximo de asesinos que puedes añadir.":"No se pudo añadir el asesino.");return;}
+  state.custom=[...state.custom.filter(c=>c.id!==data.id),rowToKiller(data)];
+  $("addName").value="";$("addForm").hidden=true;render();toast("Asesino añadido para todos.");
+}
+async function cloudRemoveKiller(c){
+  const {error}=await sb.from("killers").delete().eq("id",c.id);
+  if(error){toast(/otros/i.test(error.message||"")?"No se puede quitar: otros usuarios tienen builds de este asesino.":"No se pudo quitar el asesino.");return;}
+  if(c.imgPath)sb.storage.from("killers").remove([c.imgPath]);
+  state.custom=state.custom.filter(x=>x.id!==c.id);
+  const nb={...state.builds};delete nb[c.id];state.builds=nb;
+  closePanel();render();toast("Asesino quitado.");
+}
 async function loadCloud(){
-  const {data,error}=await sb.from("builds").select("id,killer,name,perks,notes,author,user_id,created_at").order("created_at",{ascending:false}).limit(5000);
-  if(error){toast("No se pudieron cargar las builds de la comunidad.");return;}
+  const [res,kres]=await Promise.all([
+    sb.from("builds").select("id,killer,name,perks,notes,author,user_id,created_at").order("created_at",{ascending:false}).limit(5000),
+    sb.from("killers").select("id,name,author,user_id,img_path,created_at").order("created_at",{ascending:true}).limit(500)
+  ]);
+  if(!kres.error)state.custom=kres.data.map(rowToKiller);
+  const {data,error}=res;
+  if(error){toast("No se pudieron cargar las builds de la comunidad.");render();renderPanel();return;}
   const g={};data.forEach(r=>{(g[r.killer]=g[r.killer]||[]).push(rowToBuild(r));});
   state.builds=g;render();renderPanel();
 }
@@ -694,6 +734,7 @@ function renderAccount(){
   b.hidden=false;b.textContent=state.session?(state.nick||"Mi cuenta"):"Login";
 }
 function localCount(){return Object.values(state.localBuilds||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);}
+function localKillers(){return (state.localCustom||[]).length;}
 let accReason="";
 function fillAcc(){
   const logged=!!state.session;
@@ -705,7 +746,7 @@ function fillAcc(){
     $("accTitle").textContent=state.nick||"Elige tu nombre";
     $("accText").textContent=state.nick?"Has entrado como "+(state.session.user.email||"")+". Tu nombre aparece en las builds que publicas.":"Antes de publicar, elige el nombre que verán los demás en tus builds.";
     $("accNick").value=state.nick;
-    const n=localCount();$("migrateBtn").hidden=!(n&&state.nick);$("migrateBtn").textContent=n===1?"Subir mi build local":"Subir mis "+n+" builds locales";
+    const n=localCount(),k=localKillers();$("migrateBtn").hidden=!((n||k)&&state.nick);$("migrateBtn").textContent=n?(n===1?"Subir mi build local":"Subir mis "+n+" builds locales"):(k===1?"Subir mi asesino local":"Subir mis "+k+" asesinos locales");
   }
 }
 function openAcc(reason){accReason=reason||"";fillAcc();$("acc").hidden=false;setTimeout(()=>{const f=state.session?$("accNick"):$("accEmail");f.focus();},50);}
@@ -755,20 +796,22 @@ $("nickForm").addEventListener("submit",async e=>{
   if(error){toast("No se pudo guardar el nombre.");return;}
   if(data&&data.user)state.session={...state.session,user:data.user};
   state.nick=nick;renderAccount();fillAcc();
-  const uid=myId();if(uid)sb.from("builds").update({author:nick}).eq("user_id",uid).then(()=>scheduleReload());
+  const uid=myId();if(uid){sb.from("builds").update({author:nick}).eq("user_id",uid).then(()=>scheduleReload());sb.from("killers").update({author:nick}).eq("user_id",uid).then(()=>scheduleReload());}
   toast("Nombre guardado.");
 });
 $("logoutBtn").onclick=async()=>{await sb.auth.signOut();closeAcc();toast("Has cerrado sesión.");};
 $("migrateBtn").onclick=async()=>{
   const rows=[];
   Object.entries(state.localBuilds||{}).forEach(([cid,arr])=>(arr||[]).forEach(b=>rows.push({killer:cid,name:String(b.name||"Build").slice(0,80),perks:(b.perks||[]).slice(0,4),notes:String(b.notes||"").slice(0,600),author:state.nick})));
-  if(!rows.length)return;
+  if(!rows.length&&!(state.localCustom||[]).length)return;
   const btn=$("migrateBtn");btn.disabled=true;btn.textContent="Subiendo…";
+  const kr=(state.localCustom||[]).map(c=>({id:c.id,name:String(c.name).slice(0,60),author:state.nick}));
+  if(kr.length){const {error}=await sb.from("killers").upsert(kr,{onConflict:"id",ignoreDuplicates:true});if(error){btn.disabled=false;fillAcc();toast("No se pudieron subir tus asesinos.");return;}}
   for(let i=0;i<rows.length;i+=100){
     const {error}=await sb.from("builds").insert(rows.slice(i,i+100));
     if(error){btn.disabled=false;fillAcc();toast("No se pudieron subir todas las builds.");return;}
   }
-  state.localBuilds={};lsSave();btn.disabled=false;fillAcc();await loadCloud();toast("Tus builds locales ya están en la comunidad.");
+  state.localBuilds={};state.localCustom=[];lsSave();btn.disabled=false;fillAcc();await loadCloud();toast("Tus builds locales ya están en la comunidad.");
 };
 $("mineOnly").addEventListener("change",e=>{state.filterMine=e.target.checked;renderPanel();});
 async function init(){
@@ -777,12 +820,12 @@ async function init(){
   if(cfg.url&&cfg.key&&window.supabase&&typeof window.supabase.createClient==="function"){
     try{
       sb=window.supabase.createClient(cfg.url,cfg.key);
-      lsLoad();state.localBuilds=state.builds||{};state.builds={};state.mode="cloud";
+      lsLoad();state.localBuilds=state.builds||{};state.builds={};state.localCustom=state.custom||[];state.custom=[];state.mode="cloud";
       renderAccount();
       const {data}=await sb.auth.getSession();setSession(data&&data.session);
       sb.auth.onAuthStateChange((ev,s)=>setSession(s));
       await loadCloud();
-      sb.channel("builds-live").on("postgres_changes",{event:"*",schema:"public",table:"builds"},()=>scheduleReload()).subscribe();
+      sb.channel("builds-live").on("postgres_changes",{event:"*",schema:"public",table:"builds"},()=>scheduleReload()).on("postgres_changes",{event:"*",schema:"public",table:"killers"},()=>scheduleReload()).subscribe();
       document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleReload();});
       return;
     }catch(e){sb=null;toast("No se pudo conectar con la comunidad. Se usará el modo local.");}
