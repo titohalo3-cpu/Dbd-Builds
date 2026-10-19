@@ -5,7 +5,7 @@ const BASE=KILLERS.map((n,i)=>({id:"k-"+slug(n),name:n,rel:i+1}));
 
 const DEFAULT_IMGS={"k-the-mastermind": "killers/the-mastermind.webp","k-the-unknown": "killers/the-unknown.webp","k-the-onryo": "killers/the-onryo.webp","k-the-dredge": "killers/the-dredge.webp","k-the-knight": "killers/the-knight.webp","k-the-skull-merchant": "killers/the-skull-merchant.webp","k-the-singularity": "killers/the-singularity.webp","k-the-krasue": "killers/the-krasue.webp","k-the-demogorgon": "killers/the-demogorgon.webp","k-the-first": "killers/the-first.webp","k-the-slasher": "killers/the-slasher.webp","k-the-judgment": "killers/the-judgment.webp","k-dracula": "killers/dracula.webp","k-the-ghoul": "killers/the-ghoul.webp","k-the-houndmaster": "killers/the-houndmaster.webp","k-the-animatronic": "killers/the-animatronic.webp","k-the-xenomorph": "killers/the-xenomorph.webp","k-the-lich-vecna": "killers/the-lich-vecna.webp","k-the-good-guy": "killers/the-good-guy.webp","k-the-hag": "killers/the-hag.webp","k-the-cannibal": "killers/the-cannibal.webp","k-the-nightmare": "killers/the-nightmare.webp","k-the-blight": "killers/the-blight.webp","k-the-clown": "killers/the-clown.webp","k-the-deathslinger": "killers/the-deathslinger.webp","k-the-doctor": "killers/the-doctor.webp","k-the-ghost-face": "killers/the-ghost-face.webp","k-the-hillbilly": "killers/the-hillbilly.webp","k-the-huntress": "killers/the-huntress.webp","k-the-legion": "killers/the-legion.webp","k-the-nemesis": "killers/the-nemesis.webp","k-the-nurse": "killers/the-nurse.webp","k-the-oni": "killers/the-oni.webp","k-the-pig": "killers/the-pig.webp","k-the-plague": "killers/the-plague.webp","k-the-executioner": "killers/the-executioner.webp","k-the-spirit": "killers/the-spirit.webp","k-the-artist": "killers/the-artist.webp","k-the-twins": "killers/the-twins.webp","k-the-trapper": "killers/the-trapper.webp","k-the-trickster": "killers/the-trickster.webp","k-the-wraith": "killers/the-wraith.webp","k-the-shape": "killers/the-shape.webp","k-the-cenobite": "killers/the-cenobite.webp"};
 let sortMode="new";try{const s=localStorage.getItem("dbd-sort");if(s=="new"||s=="old"||s=="az")sortMode=s;}catch(e){}
-const state={q:"",builds:{},localBuilds:{},imgs:{},perkIcons:{},custom:[],localCustom:[],open:null,editing:null,mode:"loading",session:null,nick:"",filterMine:false};
+const state={q:"",builds:{},localBuilds:{},imgs:{},perkIcons:{},custom:[],localCustom:[],open:null,editing:null,mode:"loading",session:null,nick:"",filterMine:false,isAdmin:false};
 let sb=null;
 function myId(){return state.session&&state.session.user?state.session.user.id:null;}
 const $=id=>document.getElementById(id);
@@ -270,7 +270,8 @@ function renderPanel(){
     const ed=el("button","btn small","Editar");ed.type="button";ed.dataset.act="edit";ed.dataset.bid=b.id;
     const del=el("button","btn small ghost","Borrar");del.type="button";del.dataset.act="del";del.dataset.bid=b.id;
     const cp=el("button","btn small","Copiar");cp.type="button";cp.dataset.act="copy";cp.dataset.bid=b.id;
-    if(own)act.append(ed,cp,del);else act.append(cp);body.appendChild(act);
+    if(own)act.append(ed,cp);else act.append(cp);
+    if(!sb||state.isAdmin)act.append(del);body.appendChild(act);
     art.append(lo,body);box.appendChild(art);
   });
 }
@@ -747,12 +748,20 @@ async function loadCloud(){
   state.builds=g;render();renderPanel();
   syncLocalKillers();
 }
+async function checkAdmin(){
+  const uid=myId();
+  if(!sb||!uid){state.isAdmin=false;renderPanel();return;}
+  const {data,error}=await sb.from("admins").select("user_id").eq("user_id",uid).maybeSingle();
+  state.isAdmin=!error&&!!data;renderPanel();if(!$("acc").hidden)fillAcc();
+}
 function setSession(s){
   state.session=s||null;
   const md=s&&s.user&&s.user.user_metadata||{};
   state.nick=(md.nick||"").trim();
+  state.isAdmin=false;
   renderAccount();renderPanel();
   if(!$("acc").hidden)fillAcc();
+  checkAdmin();
   syncLocalKillers();
 }
 function renderAccount(){
@@ -770,7 +779,7 @@ function fillAcc(){
     $("accText").textContent=accReason||"Cualquiera puede ver las builds. Para publicar, editar o borrar las tuyas, entra con tu email: te enviamos un enlace y no necesitas contraseña.";
   }else{
     $("accTitle").textContent=state.nick||"Elige tu nombre";
-    $("accText").textContent=state.nick?"Has entrado como "+(state.session.user.email||"")+". Tu nombre aparece en las builds que publicas.":"Antes de publicar, elige el nombre que verán los demás en tus builds.";
+    $("accText").textContent=state.nick?"Has entrado como "+(state.session.user.email||"")+". Tu nombre aparece en las builds que publicas."+(state.isAdmin?" Eres administradora: puedes borrar cualquier build.":""):"Antes de publicar, elige el nombre que verán los demás en tus builds.";
     $("accNick").value=state.nick;
     const n=localCount(),k=localKillers();$("migrateBtn").hidden=!((n||k)&&state.nick);$("migrateBtn").textContent=n?(n===1?"Subir mi build local":"Subir mis "+n+" builds locales"):(k===1?"Subir mi asesino local":"Subir mis "+k+" asesinos locales");
   }
