@@ -193,7 +193,8 @@ function render(){
     g.appendChild(el("p","empty","Nada coincide con esa búsqueda. Prueba con otro nombre o perk."));
   }
   const total=Object.values(state.builds).reduce((n,a)=>n+a.length,0);
-  $("sub").textContent=total?(total===1?"1 build guardada. ":total+" builds guardadas. ")+"Elige un asesino para verlas.":"Elige un asesino para ver o guardar sus builds.";
+  const kc=allChars().length,withB=allChars().filter(c=>buildsOf(c.id).length).length;
+  $("sub").textContent=kc+" asesinos · "+(total===1?"1 build":total+" builds")+(withB?" en "+withB+(withB===1?" asesino":" asesinos"):"");
   const tip=" Para poner imágenes, arrastra una sobre un asesino o usa Importar imágenes con archivos nombrados como el asesino (por ejemplo, trapper.png o the-nurse.jpg).";
   $("foot").textContent=sb?"Las builds son de la comunidad: cualquiera puede verlas. Para publicar las tuyas, entra con tu email."+tip:state.mode==="cloud"?"Tus builds se guardan en tu cuenta y solo las ves tú."+tip:state.mode==="local"?"Tus builds se guardan en este navegador."+tip:"Cargando tus builds…";
   $("bulkBtn").hidden=!canUpload();
@@ -766,7 +767,7 @@ function setSession(s){
 }
 function renderAccount(){
   const b=$("accBtn");if(!sb){b.hidden=true;return;}
-  b.hidden=false;b.textContent=state.session?(state.nick||"Mi cuenta"):"Login";
+  b.hidden=false;b.querySelector("span").textContent=state.session?(state.nick||"Mi cuenta"):"Login";
 }
 function localCount(){return Object.values(state.localBuilds||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);}
 function localKillers(){return (state.localCustom||[]).length;}
@@ -867,5 +868,11 @@ async function init(){
   renderAccount();
   await initClaude();
 }
+document.querySelectorAll(".seg").forEach(seg=>{
+  const sel=$(seg.dataset.for);
+  const paint=()=>seg.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===sel.value));
+  seg.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.dataset.v===sel.value)return;sel.value=b.dataset.v;sel.dispatchEvent(new Event("change"));paint();});
+  paint();
+});
 init();
 })();
