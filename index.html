@@ -6,36 +6,34 @@
 <title>Builds en la Niebla</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IM+Fell+English&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=IM+Fell+English&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <div>
-      <h1>Dbd Builds</h1>
-      <p class="sub" id="sub">Elige un asesino para ver o guardar sus builds.</p>
-    </div>
-    <div class="hbtns"><button class="btn" id="accBtn" type="button" hidden>Login</button><button class="btn primary" id="randBtn" type="button">Killer aleatorio</button></div>
-    <div class="search">
-      <input id="q" type="search" placeholder="Buscar asesino, build o perk" aria-label="Buscar asesino, build o perk" autocomplete="off">
-    </div>
-    <label class="sort"><span>Ordenar</span>
-      <select id="sortSel" aria-label="Ordenar asesinos">
-        <option value="new">Más nuevos</option>
-        <option value="old">Más antiguos</option>
-        <option value="az">Alfabético</option>
-      </select>
-    </label>
-    <label class="sort"><span>Perks en</span>
-      <select id="langSel" aria-label="Idioma de las perks">
-        <option value="es">Español</option>
-        <option value="en">English</option>
-      </select>
-    </label>
-    <button class="btn" id="bulkBtn" type="button" hidden>Importar imágenes</button>
-    <input type="file" id="bulkFile" accept="image/png,image/jpeg,image/webp" multiple hidden>
+  <header class="bar">
+    <div class="brand"><svg class="mark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5L29.5 16 16 29.5 2.5 16z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 9l7 7-7 7-7-7z" fill="var(--blood)"/></svg><span class="wm">Builds en la Niebla</span></div>
+    <label class="search"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="q" type="search" placeholder="Buscar asesino, build o perk" aria-label="Buscar asesino, build o perk" autocomplete="off"></label>
+    <div class="hbtns"><button class="btn" id="accBtn" type="button" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.4-3.2 4-4.8 7-4.8s5.6 1.6 7 4.8"/></svg><span>Login</span></button><button class="btn" id="randBtn" type="button"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.1" fill="currentColor" stroke="none"/></svg><span>Killer aleatorio</span></button></div>
   </header>
+  <div class="titlerow">
+    <div class="tt">
+      <h1>Asesinos</h1>
+      <p class="sub" id="sub"></p>
+    </div>
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Ordenar asesinos" data-for="sortSel">
+        <button type="button" data-v="new">Nuevos</button><button type="button" data-v="old">Antiguos</button><button type="button" data-v="az">A-Z</button>
+      </div>
+      <div class="seg" role="group" aria-label="Idioma de las perks" data-for="langSel">
+        <button type="button" data-v="es">ES</button><button type="button" data-v="en">EN</button>
+      </div>
+      <button class="btn" id="bulkBtn" type="button" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/></svg><span>Importar imágenes</span></button>
+      <input type="file" id="bulkFile" accept="image/png,image/jpeg,image/webp" multiple hidden>
+      <select id="sortSel" class="vh" tabindex="-1" aria-hidden="true"><option value="new">Más nuevos</option><option value="old">Más antiguos</option><option value="az">A-Z</option></select>
+      <select id="langSel" class="vh" tabindex="-1" aria-hidden="true"><option value="es">Español</option><option value="en">English</option></select>
+    </div>
+  </div>
 
   <div id="grid" class="grid" aria-live="polite"></div>
   <form id="addForm" hidden>
@@ -54,7 +52,7 @@
         <button class="btn small" id="imgPick" type="button">Subir imagen</button>
         <button class="btn small warn" id="imgRemove" type="button" hidden>Quitar imagen</button>
       </div>
-      <button class="x" id="pClose" aria-label="Cerrar">✕</button>
+      <button class="x" id="pClose" aria-label="Cerrar"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <div class="htext"><h2 id="pTitle"></h2></div>
     </div>
     <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
@@ -70,10 +68,10 @@
         <div class="field">
           <label>Perks</label>
           <div class="perkgrid">
-            <div class="pslot"><span class="pic slotpic" id="fI0"><span class="d"><span></span></span></span><input id="fP0" type="text" maxlength="60" placeholder="Busca la perk 1 (español o inglés)" aria-label="Perk 1" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX0" aria-label="Quitar perk 1" hidden>✕</button></div>
-            <div class="pslot"><span class="pic slotpic" id="fI1"><span class="d"><span></span></span></span><input id="fP1" type="text" maxlength="60" placeholder="Busca la perk 2 (español o inglés)" aria-label="Perk 2" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX1" aria-label="Quitar perk 2" hidden>✕</button></div>
-            <div class="pslot"><span class="pic slotpic" id="fI2"><span class="d"><span></span></span></span><input id="fP2" type="text" maxlength="60" placeholder="Busca la perk 3 (español o inglés)" aria-label="Perk 3" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX2" aria-label="Quitar perk 3" hidden>✕</button></div>
-            <div class="pslot"><span class="pic slotpic" id="fI3"><span class="d"><span></span></span></span><input id="fP3" type="text" maxlength="60" placeholder="Busca la perk 4 (español o inglés)" aria-label="Perk 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX3" aria-label="Quitar perk 4" hidden>✕</button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI0"><span class="d"><span></span></span></span><input id="fP0" type="text" maxlength="60" placeholder="Busca la perk 1 (español o inglés)" aria-label="Perk 1" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX0" aria-label="Quitar perk 1" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI1"><span class="d"><span></span></span></span><input id="fP1" type="text" maxlength="60" placeholder="Busca la perk 2 (español o inglés)" aria-label="Perk 2" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX1" aria-label="Quitar perk 2" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI2"><span class="d"><span></span></span></span><input id="fP2" type="text" maxlength="60" placeholder="Busca la perk 3 (español o inglés)" aria-label="Perk 3" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX2" aria-label="Quitar perk 3" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+            <div class="pslot"><span class="pic slotpic" id="fI3"><span class="d"><span></span></span></span><input id="fP3" type="text" maxlength="60" placeholder="Busca la perk 4 (español o inglés)" aria-label="Perk 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="perkSugg" autocomplete="off"><button class="pclear" type="button" id="fX3" aria-label="Quitar perk 4" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
           </div>
           <div class="iconrow"><p class="hint" style="margin:0">Escribe en español o en inglés, o desplázate por la lista: están todas las perks, empezando por las de este asesino.</p>
           <button class="linkbtn" type="button" id="iconBtn">Importar iconos de perks</button><input type="file" id="iconFile" accept="image/png,image/jpeg,image/webp" multiple hidden></div>
@@ -94,8 +92,7 @@
 </aside>
 <div id="rand" class="rand" role="dialog" aria-modal="true" aria-labelledby="randTitle" hidden>
   <div class="rcard">
-    <button class="x" id="randClose" type="button" aria-label="Cerrar">✕</button>
-    <p class="rkick">Killer aleatorio</p>
+    <button class="x" id="randClose" type="button" aria-label="Cerrar"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="rstage"><img id="randImg" alt=""></div>
     <h2 class="rname" id="randTitle" aria-live="polite"></h2>
     <p class="rmeta" id="randMeta"></p>
@@ -110,8 +107,7 @@
 </div>
 <div id="acc" class="rand" role="dialog" aria-modal="true" aria-labelledby="accTitle" hidden>
   <div class="rcard">
-    <button class="x" id="accClose" type="button" aria-label="Cerrar">✕</button>
-    <p class="rkick">Comunidad</p>
+    <button class="x" id="accClose" type="button" aria-label="Cerrar"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2 class="rname" id="accTitle">Login</h2>
     <p class="rmeta" id="accText"></p>
     <form id="loginForm" class="accform">
