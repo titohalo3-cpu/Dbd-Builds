@@ -366,3 +366,46 @@ header.bar .hbtns{grid-area:auto;justify-self:end;flex-direction:row;align-items
 #themeBtn{width:36px;padding:0}
 :root[data-theme="dark"] #themeBtn .i-moon,:root[data-theme="light"] #themeBtn .i-sun{display:none}
 @media (max-width:640px){header.bar .hbtns #themeBtn{width:36px;padding:0}}
+
+/* Panel ancho: la imagen del asesino se ve entera y las builds van en tarjetas de 3 en 3 */
+#panel{width:min(1480px,100%)}
+.hero{width:100%;height:auto;aspect-ratio:16/9;max-width:100%;max-height:min(56vh,620px)}
+.hero.noimg{aspect-ratio:auto;height:190px}
+.hero .hbg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(24px) saturate(.85) brightness(.62);transform:scale(1.06)}
+.hero img.hfg{object-fit:contain;object-position:center}
+.hero::after{background:linear-gradient(to top,var(--bg) 0%,transparent 32%)}
+.hero .trio{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.hero .trio img{position:static;width:100%;height:100%;object-fit:cover;object-position:center 20%}
+.pbody{padding-left:28px;padding-right:28px}
+#bform{max-width:760px}
+#genNote{margin:-6px 0 18px;max-width:72ch}
+#blist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+#blist .noBuilds{grid-column:1/-1}
+.bcard{display:flex;flex-direction:column;min-width:0;background:var(--surf);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.bcard h3{margin:0;padding:14px 16px 12px;text-align:center;font-weight:700;font-size:1.2rem;line-height:1.2;text-wrap:balance;border-bottom:1px solid var(--line)}
+.bperks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:18px 10px 14px;border-bottom:1px solid var(--line)}
+.bperk{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0;text-align:center}
+.gem{position:relative;width:68px;height:68px;max-width:100%;display:grid;place-items:center}
+.gem::before{content:"";position:absolute;inset:10px;transform:rotate(45deg);background:color-mix(in srgb,var(--blood) 78%,#000);border:2px solid var(--blood);box-shadow:0 0 0 2px var(--surf),0 0 0 3px color-mix(in srgb,var(--blood) 55%,var(--line))}
+.gem.hex::before{border-color:var(--ember)}
+.gem.vacant::before{background:var(--perk);border-color:var(--line);box-shadow:none;opacity:.6}
+.gem img{position:relative;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.gem span{position:relative;font-weight:700;font-size:.85rem;color:#f6eee2}
+.pname{font-size:.78rem;line-height:1.25;color:var(--muted);overflow-wrap:anywhere}
+.bperk.hit .pname{color:var(--blood);font-weight:700}
+.bnotes{margin:0;padding:12px 16px 12px 38px;max-height:200px;overflow-y:auto;font-size:.92rem;line-height:1.45;flex:1;scrollbar-color:var(--blood) transparent}
+.bnotes li+li{margin-top:5px}
+.bnotes li::marker{color:var(--blood);font-weight:700}
+.bempty{margin:0;padding:12px 16px;color:var(--muted);font-size:.9rem;flex:1}
+.bcard .bact{margin:0;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.bcard.picked{animation:picked 1.8s ease-out}
+@media (prefers-reduced-motion: reduce){.bcard.picked{animation:none;background:var(--blood-soft)}}
+.tile.gen{grid-column:1/-1;min-height:150px;border-color:color-mix(in srgb,var(--blood) 45%,var(--line))}
+.tile.gen .trio{position:absolute;inset:0;z-index:-2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));opacity:.34;transition:opacity .25s ease}
+.tile.gen .trio span{background-size:cover;background-position:center 20%}
+.tile.gen:hover .trio,.tile.gen:focus-visible .trio{opacity:.7}
+.tile.gen .tname{font-size:1.35rem}
+.tile.gen .rel{color:var(--blood)}
+@media (max-width:1100px){#blist{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){#blist{grid-template-columns:minmax(0,1fr)}.pbody{padding-left:16px;padding-right:16px}.gem{width:60px;height:60px}}
+.bact .bauthor{margin:0 auto 0 0;align-self:center}

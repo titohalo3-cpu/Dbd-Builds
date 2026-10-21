@@ -7,6 +7,11 @@ const DEFAULT_IMGS={"k-the-mastermind": "killers/the-mastermind.webp","k-the-unk
 let sortMode="new";try{const s=localStorage.getItem("dbd-sort");if(s=="new"||s=="old"||s=="az")sortMode=s;}catch(e){}
 const state={q:"",builds:{},localBuilds:{},imgs:{},perkIcons:{},custom:[],localCustom:[],open:null,editing:null,mode:"loading",session:null,nick:"",filterMine:false,isAdmin:false};
 let sb=null;
+const GEN="general",GENERAL={id:GEN,name:"Builds generales",general:true};
+const GEN_IMGS=["k-the-trapper","k-the-knight","k-the-nurse"];
+// Asesinos añadidos que en realidad eran builds generales: sus builds pasan a "general".
+const TO_GENERAL=["kc-build-m1-slow-9pcp","kc-exposeddddddd-ofjz","kc-late-sls4","kc-m1tralleta-h0m3"];
+function canEditBuilds(cid){return cid!==GEN||(!!sb&&state.isAdmin);}
 function myId(){return state.session&&state.session.user?state.session.user.id:null;}
 const $=id=>document.getElementById(id);
 const norm=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -143,7 +148,7 @@ async function initClaude(){
 }
 
 function allChars(){if(sb){const ids=new Set(state.custom.map(c=>c.id));return [...BASE,...state.custom,...(state.localCustom||[]).filter(c=>!ids.has(c.id)).map(c=>({...c,role:"killer",custom:true,localOnly:true}))];}return [...BASE,...state.custom];}
-function charById(id){return allChars().find(c=>c.id===id);}
+function charById(id){return id===GEN?GENERAL:allChars().find(c=>c.id===id);}
 function buildsOf(id){return state.builds[id]||[];}
 function imgSrc(id){const i=state.imgs[id];if(i)return i.id?"/_blob/"+i.id:(i.data||DEFAULT_IMGS[id]||null);const k=sb&&state.custom.find(c=>c.id===id&&c.img);if(k)return k.img;return DEFAULT_IMGS[id]||null;}
 function matches(c,q){
@@ -169,6 +174,16 @@ function render(){
   const prev=prevIds?new Set(prevIds):null;let entered=0;
   const list=allChars().filter(c=>matches(c,q)).sort((a,b)=>sortMode==="az"?sortKey(a.name).localeCompare(sortKey(b.name),"es"):sortMode==="new"?relOf(b)-relOf(a):relOf(a)-relOf(b));
   const g=$("grid");g.textContent="";
+  const genHit=!q||matches(GENERAL,q);
+  if(genHit){
+    const n=buildsOf(GEN).length;
+    const b=el("button","tile gen img"+(n?" has":""));b.type="button";b.dataset.id=GEN;
+    const trio=el("span","trio");GEN_IMGS.forEach(k=>{const s=el("span");if(DEFAULT_IMGS[k])s.style.backgroundImage='url("'+DEFAULT_IMGS[k]+'")';trio.appendChild(s);});b.appendChild(trio);
+    b.appendChild(el("span","rel","Para cualquier asesino"));
+    b.appendChild(el("span","tname","Builds generales"));
+    b.appendChild(el("span","tcount",n?(n===1?"1 build":n+" builds"):"Sin builds todavía"));
+    g.appendChild(b);
+  }
   list.forEach(c=>{
     const n=buildsOf(c.id).length,src=imgSrc(c.id);
     const b=el("button","tile"+(n?" has":"")+(src?" img":""));b.type="button";b.dataset.id=c.id;
@@ -182,14 +197,14 @@ function render(){
     g.appendChild(b);
   });
   const only=q&&list.length===1?list[0].id:null;
-  if(only&&only!==lastOnly){const t=g.querySelector(".tile");if(t){t.style.animationDelay="";t.classList.add("only");}}
+  if(only&&only!==lastOnly){const t=g.querySelector(".tile:not(.gen)");if(t){t.style.animationDelay="";t.classList.add("only");}}
   lastOnly=only;prevIds=list.map(c=>c.id);
   if(!q){
     const a=el("button","tile add");a.type="button";a.id="addTile";
     a.appendChild(el("span","tname","+ Añadir asesino"));
     a.appendChild(el("span","tcount","Para los que salgan nuevos"));
     g.appendChild(a);
-  }else if(!list.length){
+  }else if(!list.length&&!genHit){
     g.appendChild(el("p","empty","Nada coincide con esa búsqueda. Prueba con otro nombre o perk."));
   }
   const total=Object.values(state.builds).reduce((n,a)=>n+a.length,0);
@@ -212,7 +227,7 @@ function finishClose(){
 function openPanel(id){
   if(closeT){finishClose();void $("panel").offsetWidth;}
   state.open=id;state.editing=null;lastFocus=document.activeElement;lastHeroSrc=undefined;
-  $("bform").hidden=true;$("newBuild").hidden=false;
+  $("bform").hidden=true;$("newBuild").hidden=!canEditBuilds(id);
   $("scrim").hidden=false;$("panel").hidden=false;
   $("panel").querySelector(".pscroll").scrollTop=0;
   renderPanel();$("pClose").focus();
@@ -226,14 +241,18 @@ function closePanel(){
 }
 function canUpload(){return state.mode!=="loading"&&(state.mode==="local"||!!col||!!sb);}
 function renderHero(c){
-  const hero=$("hero"),src=imgSrc(c.id);
-  if(src!==lastHeroSrc){
-    const old=hero.querySelector("img");if(old)old.remove();
-    if(src){const im=document.createElement("img");im.alt="";im.src=src;hero.insertBefore(im,hero.firstChild);}
-    lastHeroSrc=src;
+  const hero=$("hero"),gen=c.id===GEN,src=gen?null:imgSrc(c.id),key=gen?GEN:src;
+  if(key!==lastHeroSrc){
+    hero.querySelectorAll(".hbg,.hfg,.trio").forEach(n=>n.remove());
+    if(gen){const t=el("div","trio");GEN_IMGS.forEach(k=>{if(!DEFAULT_IMGS[k])return;const im=document.createElement("img");im.alt="";im.src=DEFAULT_IMGS[k];t.appendChild(im);});hero.insertBefore(t,hero.firstChild);}
+    else if(src){
+      const im=document.createElement("img");im.className="hfg";im.alt="";im.src=src;hero.insertBefore(im,hero.firstChild);
+      const bg=el("span","hbg");bg.style.backgroundImage='url("'+src.replace(/"/g,"%22")+'")';hero.insertBefore(bg,im);
+    }
+    lastHeroSrc=key;
   }
-  hero.classList.toggle("noimg",!src);
-  $("imgActions").hidden=!canUpload()||!ownsKiller(c);
+  hero.classList.toggle("noimg",!src&&!gen);
+  $("imgActions").hidden=gen||!canUpload()||!ownsKiller(c);
   $("imgPick").textContent=src?"Cambiar imagen":"Subir imagen";
   $("imgRemove").hidden=!(state.imgs[c.id]||(sb&&c.shared&&ownsKiller(c)&&c.imgPath));
   $("imgRemove").textContent=DEFAULT_IMGS[c.id]?"Volver a la original":"Quitar imagen";
@@ -248,32 +267,42 @@ function renderPanel(){
   const box=$("blist");box.textContent="";
   const all=buildsOf(c.id),uid=myId();
   const list=sb&&state.filterMine&&uid?all.filter(b=>b.userId===uid):all;
-  $("randBuild").hidden=!all.length;$("mineWrap").hidden=!(sb&&uid&&all.length);
-  if(!all.length){box.appendChild(el("p","noBuilds","Todavía no hay builds para "+c.name+". Crea la primera con Nueva build."));return;}
+  const gen=c.id===GEN,mine=canEditBuilds(c.id);
+  $("randBuild").hidden=!all.length;$("mineWrap").hidden=gen||!(sb&&uid&&all.length);
+  if(!mine){$("newBuild").hidden=true;$("bform").hidden=true;}
+  $("genNote").hidden=!gen;
+  if(gen)$("genNote").textContent=mine?"Estas builds las ve todo el mundo. Solo las administradoras pueden crearlas, editarlas o borrarlas.":"Builds para jugar con cualquier asesino. Solo la administración de la página puede añadirlas; las tuyas publícalas dentro de cada asesino.";
+  if(!all.length){box.appendChild(el("p","noBuilds",gen?(mine?"Todavía no hay builds generales. Crea la primera con Nueva build.":"Todavía no hay builds generales."):"Todavía no hay builds para "+c.name+". Crea la primera con Nueva build."));return;}
   if(!list.length){box.appendChild(el("p","noBuilds","Aún no has publicado builds para "+c.name+"."));return;}
   list.forEach(b=>{
-    const art=el("article","build");art.dataset.bid=b.id;
-    const lo=el("div","loadout");const dm=el("div","diamond");
+    const art=el("article","bcard");art.dataset.bid=b.id;
+    art.appendChild(el("h3",null,b.name));
+    const row=el("div","bperks");
     const perks=(b.perks||[]).slice(0,4);while(perks.length<4)perks.push("");
-    perks.forEach(p=>{const t=p?perkType(p):"";const s=el("div","slot "+(p?"filled":"vacant")+(t?" "+t:""));s.title=p?perkLabel(p):"Vacío";const src=p?perkIconSrc(p):null;if(src){const im=document.createElement("img");im.alt="";im.src=src;s.appendChild(im);s.classList.add("has-img");}else s.appendChild(el("span",null,p?initials(perkLabel(p)):""));dm.appendChild(s);});
-    lo.appendChild(dm);lo.setAttribute("aria-hidden","true");
-    const body=el("div");
-    body.appendChild(el("h3",null,b.name));
+    perks.forEach(p=>{
+      const hit=p&&q&&(norm(p).includes(q)||norm(perkLabel(p)).includes(q)||norm(perkOther(p)).includes(q));
+      const f=p?findPerk(p):null,t=p?perkType(p):"";
+      const cell=el("div","bperk"+(hit?" hit":""));
+      if(p)cell.title=perkLabel(p)+(f?" · "+(f.owner||"General"):"");
+      const gem=el("div","gem"+(p?"":" vacant")+(t?" "+t:""));gem.setAttribute("aria-hidden","true");
+      const src=p?perkIconSrc(p):null;
+      if(src){const im=document.createElement("img");im.alt="";im.src=src;gem.appendChild(im);}else if(p)gem.appendChild(el("span",null,initials(perkLabel(p))));
+      cell.append(gem,el("span","pname",p?perkLabel(p):"Vacío"));
+      row.appendChild(cell);
+    });
+    art.appendChild(row);
+    const lines=(b.notes||"").split(/\n+/).map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,"").trim()).filter(Boolean);
+    if(lines.length){const ol=el("ol","bnotes");lines.forEach(l=>ol.appendChild(el("li",null,l)));art.appendChild(ol);}
+    else art.appendChild(el("p","bempty","Sin notas."));
     const own=!sb||(uid&&b.userId===uid);
-    if(sb&&b.author)body.appendChild(el("p","bauthor",b.author+(own?" (tú)":"")));
-    const ol=el("ol","perks");
-    const filled=perks.filter(Boolean);
-    if(!filled.length)ol.appendChild(el("li","none","Sin perks"));
-    filled.forEach(p=>{const hit=q&&(norm(p).includes(q)||norm(perkLabel(p)).includes(q)||norm(perkOther(p)).includes(q));const li=el("li",hit?"hit":null);li.appendChild(perkIcon(p,"mini"));li.appendChild(el("span",null,perkLabel(p)));const f=findPerk(p);if(f)li.appendChild(el("span","pown",f.owner||"General"));ol.appendChild(li);});
-    body.appendChild(ol);
-    if(b.notes)body.appendChild(el("p","notes",b.notes));
     const act=el("div","bact");
+    if(sb&&b.author)act.appendChild(el("span","bauthor",b.author+(own?" (tú)":"")));
     const ed=el("button","btn small","Editar");ed.type="button";ed.dataset.act="edit";ed.dataset.bid=b.id;
     const del=el("button","btn small ghost","Borrar");del.type="button";del.dataset.act="del";del.dataset.bid=b.id;
     const cp=el("button","btn small","Copiar");cp.type="button";cp.dataset.act="copy";cp.dataset.bid=b.id;
-    if(own)act.append(ed,cp);else act.append(cp);
-    if(!sb||state.isAdmin)act.append(del);body.appendChild(act);
-    art.append(lo,body);box.appendChild(art);
+    if(own&&mine)act.append(ed,cp);else act.append(cp);
+    if(!sb||state.isAdmin)act.append(del);
+    art.appendChild(act);box.appendChild(art);
   });
 }
 function showForm(build){
@@ -285,7 +314,7 @@ function showForm(build){
   $("bform").hidden=false;$("newBuild").hidden=true;
   $("fName").focus();
 }
-function hideForm(){closeCombo();state.editing=null;$("bform").hidden=true;$("newBuild").hidden=false;}
+function hideForm(){closeCombo();state.editing=null;$("bform").hidden=true;$("newBuild").hidden=!canEditBuilds(state.open);}
 
 function resizeImage(file,max,q){
   return new Promise((res,rej)=>{
@@ -351,13 +380,13 @@ let dragTile=null;
 function clearDrag(){if(dragTile)dragTile.classList.remove("drop");dragTile=null;}
 $("grid").addEventListener("dragover",e=>{
   if(!canUpload())return;
-  const t=e.target.closest(".tile:not(.add)");if(!t)return;
+  const t=e.target.closest(".tile:not(.add):not(.gen)");if(!t)return;
   e.preventDefault();e.dataTransfer.dropEffect="copy";
   if(dragTile!==t){clearDrag();dragTile=t;t.classList.add("drop");}
 });
 $("grid").addEventListener("dragleave",e=>{const t=e.target.closest(".tile");if(t&&t===dragTile&&!t.contains(e.relatedTarget))clearDrag();});
 $("grid").addEventListener("drop",async e=>{
-  const t=e.target.closest(".tile:not(.add)");clearDrag();
+  const t=e.target.closest(".tile:not(.add):not(.gen)");clearDrag();
   if(!t||!canUpload())return;
   e.preventDefault();
   const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f)return;
@@ -405,7 +434,7 @@ $("newBuild").onclick=()=>startNewBuild();
 $("fCancel").onclick=hideForm;
 $("bform").addEventListener("submit",e=>{
   e.preventDefault();
-  const cid=state.open;if(!cid)return;
+  const cid=state.open;if(!cid||!canEditBuilds(cid))return;
   const name=$("fName").value.trim();if(!name){$("fName").focus();return;}
   const perks=[0,1,2,3].map(i=>{const v=$("fP"+i).value.trim();const f=findPerk(v);return f?f.en:v;});
   const notes=$("fNotes").value.trim();
@@ -422,7 +451,7 @@ const armed={};
 $("blist").addEventListener("click",e=>{
   const b=e.target.closest("button[data-act]");if(!b)return;
   const cid=state.open,bid=b.dataset.bid;
-  if(b.dataset.act==="edit"){const bd=buildsOf(cid).find(x=>x.id===bid);if(bd)showForm(bd);return;}
+  if(b.dataset.act==="edit"){if(!canEditBuilds(cid))return;const bd=buildsOf(cid).find(x=>x.id===bid);if(bd)showForm(bd);return;}
   if(b.dataset.act==="copy"){const bd=buildsOf(cid).find(x=>x.id===bid);if(!bd)return;const t=buildText(bd);copiedBuild=t;try{localStorage.setItem("dbd-copied",t);}catch(e){}copyText(t).then(ok=>toast(ok?"Build copiada. Pégala con Pegar build en cualquier asesino.":"Build copiada en la app. Usa Pegar build en otro asesino."));return;}
   if(!armed[bid]){armed[bid]=true;b.textContent="Confirmar borrado";b.classList.add("warn");setTimeout(()=>{delete armed[bid];if(b.isConnected){b.textContent="Borrar";b.classList.remove("warn");}},3000);return;}
   delete armed[bid];
@@ -468,12 +497,12 @@ function buildSuggestions(i){
   customPerks().forEach(c=>{if(!taken.has(norm(c)))pool.push({perk:null,key:c});});
   let out;
   if(!q){
-    const own=pool.filter(x=>x.perk&&x.perk.owner===kname);
+    const own=pool.filter(x=>x.perk&&(state.open===GEN?x.perk.owner==="":x.perk.owner===kname));
     const used=new Map();
     Object.values(state.builds).forEach(a=>a.forEach(b=>(b.perks||[]).forEach(p=>{if(p){const k=norm(perkKey(p));used.set(k,(used.get(k)||0)+1);}})));
     const fav=pool.filter(x=>!own.includes(x)&&used.has(norm(x.key))).sort((a,b)=>used.get(norm(b.key))-used.get(norm(a.key)));
     const rest=pool.filter(x=>!own.includes(x)&&!fav.includes(x)).sort((a,b)=>perkLabel(a.key).localeCompare(perkLabel(b.key),"es"));
-    own.forEach(x=>x.grp="Perks de "+kname);fav.forEach(x=>x.grp="Las que más usas");rest.forEach(x=>x.grp="Todas las perks");
+    own.forEach(x=>x.grp=state.open===GEN?"Perks comunes":"Perks de "+kname);fav.forEach(x=>x.grp="Las que más usas");rest.forEach(x=>x.grp="Todas las perks");
     out=[...own,...fav,...rest];
   }else{
     const score=x=>{
@@ -677,8 +706,8 @@ $("randBuild").onclick=()=>{
   const list=buildsOf(state.open);if(!list.length)return;
   const c=list.length>1?list.filter(b=>b.id!==lastRandBuild):list;
   const pick=c[Math.floor(Math.random()*c.length)];lastRandBuild=pick.id;
-  $("blist").querySelectorAll(".build.picked").forEach(a=>a.classList.remove("picked"));
-  const art=[...$("blist").querySelectorAll(".build")].find(a=>a.dataset.bid===pick.id);
+  $("blist").querySelectorAll(".bcard.picked").forEach(a=>a.classList.remove("picked"));
+  const art=[...$("blist").querySelectorAll(".bcard")].find(a=>a.dataset.bid===pick.id);
   if(art){void art.offsetWidth;art.classList.add("picked");art.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});}
   toast("Build aleatoria: "+pick.name);
 };
@@ -748,6 +777,22 @@ async function loadCloud(){
   const g={};data.forEach(r=>{(g[r.killer]=g[r.killer]||[]).push(rowToBuild(r));});
   state.builds=g;render();renderPanel();
   syncLocalKillers();
+  moveToGeneral();
+}
+let genTried=false;
+async function moveToGeneral(){
+  const uid=myId();if(genTried||!sb||!uid)return;
+  const ks=state.custom.filter(c=>TO_GENERAL.includes(c.id)&&c.userId===uid);if(!ks.length)return;
+  genTried=true;let moved=0;
+  for(const c of ks){
+    const {data,error}=await sb.from("builds").update({killer:GEN}).eq("killer",c.id).eq("user_id",uid).select("id");
+    if(error)continue;
+    moved+=(data||[]).length;
+    const d=await sb.from("killers").delete().eq("id",c.id);
+    if(!d.error&&c.imgPath)sb.storage.from("killers").remove([c.imgPath]);
+  }
+  await loadCloud();
+  if(moved)toast(moved===1?"1 build pasada a Builds generales.":moved+" builds pasadas a Builds generales.",5000);
 }
 async function checkAdmin(){
   const uid=myId();
@@ -764,6 +809,7 @@ function setSession(s){
   if(!$("acc").hidden)fillAcc();
   checkAdmin();
   syncLocalKillers();
+  moveToGeneral();
 }
 function renderAccount(){
   const b=$("accBtn");if(!sb){b.hidden=true;return;}
@@ -788,6 +834,7 @@ function fillAcc(){
 function openAcc(reason){accReason=reason||"";fillAcc();$("acc").hidden=false;setTimeout(()=>{const f=state.session?$("accNick"):$("accEmail");f.focus();},50);}
 function closeAcc(){$("acc").hidden=true;}
 function startNewBuild(){
+  if(!canEditBuilds(state.open))return false;
   if(sb&&!state.session){openAcc("Para publicar builds en la comunidad necesitas entrar con tu email.");return false;}
   if(sb&&!state.nick){openAcc();return false;}
   showForm(null);return true;

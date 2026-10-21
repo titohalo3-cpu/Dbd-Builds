@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Builds en la Niebla</title>
+<title>Dbd Builds</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("dbd-tema")==="light"?"light":"dark";}catch(e){document.documentElement.dataset.theme="dark";}</script>
@@ -15,7 +15,7 @@
 <body>
 <div class="wrap">
   <header class="bar">
-    <div class="brand"><svg class="mark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5L29.5 16 16 29.5 2.5 16z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 9l7 7-7 7-7-7z" fill="var(--blood)"/></svg><span class="wm">Builds en la Niebla</span></div>
+    <div class="brand"><svg class="mark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5L29.5 16 16 29.5 2.5 16z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 9l7 7-7 7-7-7z" fill="var(--blood)"/></svg><span class="wm">Dbd Builds</span></div>
     <label class="search"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="q" type="search" placeholder="Buscar asesino, build o perk" aria-label="Buscar asesino, build o perk" autocomplete="off"></label>
     <div class="hbtns"><button class="btn" id="themeBtn" type="button" aria-label="Cambiar a modo claro"><svg class="ic i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="ic i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button><button class="btn" id="accBtn" type="button" hidden><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.4-3.2 4-4.8 7-4.8s5.6 1.6 7 4.8"/></svg><span>Login</span></button><button class="btn" id="randBtn" type="button"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.1" fill="currentColor" stroke="none"/></svg><span>Killer aleatorio</span></button></div>
   </header>
@@ -61,6 +61,7 @@
     <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden>
     <div class="pbody">
       <div class="pactions"><button class="btn primary" id="newBuild" type="button">Nueva build</button><button class="btn" id="randBuild" type="button" hidden>Build aleatoria</button><label class="rcheck mine" id="mineWrap" hidden><input type="checkbox" id="mineOnly"> Solo las mías</label></div>
+      <p class="hint" id="genNote" hidden></p>
       <form id="bform" hidden>
         <div class="pasterow"><button class="linkbtn" type="button" id="pasteBtn">Pegar build</button><span class="hint" style="margin:0">Rellena el formulario con una build que hayas copiado.</span></div>
         <textarea id="pasteBox" hidden placeholder="Pega aquí la build copiada" aria-label="Pegar build"></textarea>
@@ -81,7 +82,7 @@
         </div>
         <div class="field">
           <label for="fNotes">Notas (opcional)</label>
-          <textarea id="fNotes" maxlength="600" placeholder="Add-ons, ofrenda, cuándo usarla…"></textarea>
+          <textarea id="fNotes" maxlength="600" placeholder="Una idea por línea: se muestran numeradas en la tarjeta. Add-ons, ofrenda, cuándo usarla…"></textarea>
         </div>
         <div class="formact">
           <button class="btn ghost" type="button" id="fCancel">Cancelar</button>
