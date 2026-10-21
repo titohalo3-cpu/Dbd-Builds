@@ -1,0 +1,3 @@
+# Copias de los datos de Supabase: se quedan solo en este ordenador
+datos-builds.sql
+*.backup.sql
