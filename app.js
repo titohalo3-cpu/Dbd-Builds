@@ -441,7 +441,17 @@ $("sortSel").value=sortMode;
 $("sortSel").addEventListener("change",e=>{sortMode=e.target.value;try{localStorage.setItem("dbd-sort",sortMode);}catch(err){}render();});
 $("grid").addEventListener("click",e=>{
   const nav=e.target.closest("[data-nav]");
-  if(nav){const id=nav.dataset.id;carousel[id]=(carousel[id]||0)+Number(nav.dataset.nav);render();const b=$("grid").querySelector('.ksec[data-id="'+id+'"] [data-nav="'+nav.dataset.nav+'"]');if(b)b.focus();return;}
+  if(nav){
+    const id=nav.dataset.id,dir=Number(nav.dataset.nav),sec=nav.closest(".ksec"),c=charById(id);
+    carousel[id]=(carousel[id]||0)+dir;
+    if(!sec||!c){render();return;}
+    // Solo se cambia la tarjeta de esta sección, con un deslizamiento corto.
+    const fresh=killerSection(c,norm(state.q.trim())).querySelector(".kcard");
+    const card=fresh.querySelector(".bcard");if(card)card.classList.add(dir>0?"in-next":"in-prev");
+    sec.querySelector(".kcard").replaceWith(fresh);
+    const b=fresh.querySelector('[data-nav="'+dir+'"]');if(b)b.focus();
+    return;
+  }
   const cr=e.target.closest("[data-create]");
   if(cr){openPanel(cr.dataset.create);startNewBuild();return;}
   const op=e.target.closest("[data-open]");

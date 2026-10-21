@@ -451,3 +451,10 @@ header.bar{padding-left:max(20px,calc(50vw - 840px));padding-right:max(20px,calc
 @media (max-width:860px){#grid.grid{grid-template-columns:minmax(0,1fr);gap:32px}}
 @media (max-width:520px){.kbody{grid-template-columns:minmax(0,1fr)}.kimg{min-height:0;aspect-ratio:16/9}.kimg.trio{grid-template-rows:none;grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (prefers-reduced-motion: reduce){.ksec.enter{animation:none}.kimg img{transition:none}}
+
+/* Cambio de build en la rejilla: deslizamiento corto y suave */
+@keyframes cardNext{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes cardPrev{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.bcard.in-next{animation:cardNext .32s cubic-bezier(.22,.8,.3,1)}
+.bcard.in-prev{animation:cardPrev .32s cubic-bezier(.22,.8,.3,1)}
+@media (prefers-reduced-motion: reduce){.bcard.in-next,.bcard.in-prev{animation:fade .2s ease-out}}
