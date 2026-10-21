@@ -20,8 +20,8 @@ create policy "builds_update" on public.builds for update to authenticated
   using (user_id = auth.uid() and (killer <> 'general' or public.is_admin()))
   with check (user_id = auth.uid() and (killer <> 'general' or public.is_admin()));
 
--- Exposed, Late, M1 Slow y M1 Tralleta eran asesinos añadidos para guardar builds generales.
+-- Exposed, Late, M1 Slow, M1 Tralleta y Sigilo eran asesinos añadidos para guardar builds generales.
 update public.builds set killer = 'general'
-  where killer in ('kc-build-m1-slow-9pcp', 'kc-exposeddddddd-ofjz', 'kc-late-sls4', 'kc-m1tralleta-h0m3');
+  where killer in ('kc-build-m1-slow-9pcp', 'kc-exposeddddddd-ofjz', 'kc-late-sls4', 'kc-m1tralleta-h0m3', 'kc-sigilo-001t');
 delete from public.killers
-  where id in ('kc-build-m1-slow-9pcp', 'kc-exposeddddddd-ofjz', 'kc-late-sls4', 'kc-m1tralleta-h0m3');
+  where id in ('kc-build-m1-slow-9pcp', 'kc-exposeddddddd-ofjz', 'kc-late-sls4', 'kc-m1tralleta-h0m3', 'kc-sigilo-001t');

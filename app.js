@@ -10,7 +10,7 @@ let sb=null;
 const GEN="general",GENERAL={id:GEN,name:"Builds generales",general:true};
 const GEN_IMGS=["k-the-trapper","k-the-knight","k-the-nurse"];
 // Asesinos añadidos que en realidad eran builds generales: sus builds pasan a "general".
-const TO_GENERAL=["kc-build-m1-slow-9pcp","kc-exposeddddddd-ofjz","kc-late-sls4","kc-m1tralleta-h0m3"];
+const TO_GENERAL=["kc-build-m1-slow-9pcp","kc-exposeddddddd-ofjz","kc-late-sls4","kc-m1tralleta-h0m3","kc-sigilo-001t"];
 function canEditBuilds(cid){return cid!==GEN||(!!sb&&state.isAdmin);}
 function myId(){return state.session&&state.session.user?state.session.user.id:null;}
 const $=id=>document.getElementById(id);
@@ -167,7 +167,47 @@ const SVGNS="http://www.w3.org/2000/svg";
 let toastT;
 function toast(msg,ms){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||2800);}
 
-let prevIds=null,animateNext=false,lastOnly=null;
+let prevIds=null,animateNext=false;
+const carousel={};
+function buildHit(b,q){return norm(b.name).includes(q)||(b.perks||[]).some(p=>{const f=findPerk(p);return norm(p).includes(q)||(f&&(f.ne.includes(q)||f.ns.includes(q)));});}
+function killerSection(c,q){
+  const gen=c.id===GEN,list=buildsOf(c.id),n=list.length;
+  const s=el("section","ksec"+(n?" has":"")+(gen?" gen":""));s.dataset.id=c.id;
+  const hd=el("header","khead");
+  const h=el("h2","ktitle");const hn=el("span");
+  if(q&&norm(c.name).includes(q))hn.appendChild(highlight(c.name,q));else hn.textContent=c.name;
+  h.appendChild(hn);hd.appendChild(h);
+  const meta=el("div","kmeta");meta.appendChild(el("span",null,"Builds: "+n));
+  const v=el("button","btn small primary",n?"Ver todas":"Abrir");v.type="button";v.dataset.open=c.id;meta.appendChild(v);
+  hd.appendChild(meta);s.appendChild(hd);
+  const body=el("div","kbody");
+  const fig=el("button","kimg"+(gen?" trio":""));fig.type="button";fig.dataset.open=c.id;fig.setAttribute("aria-label","Abrir "+c.name);
+  const addImg=src=>{const im=document.createElement("img");im.alt="";im.loading="lazy";im.src=src;fig.appendChild(im);};
+  if(gen)GEN_IMGS.forEach(k=>{if(DEFAULT_IMGS[k])addImg(DEFAULT_IMGS[k]);});
+  else{const src=imgSrc(c.id);if(src)addImg(src);else fig.appendChild(el("span","kinit",initials(c.name)));}
+  if(!gen&&sortMode!=="az")fig.appendChild(el("span","rel","Nº "+relOf(c)));
+  body.appendChild(fig);
+  const slot=el("div","kcard");
+  if(n){
+    let i=carousel[c.id];
+    if(i==null){i=q?Math.max(0,list.findIndex(b=>buildHit(b,q))):0;}
+    i=((i%n)+n)%n;carousel[c.id]=i;
+    slot.appendChild(buildCard(list[i],{q,uid:myId(),mine:canEditBuilds(c.id),compact:true}));
+    if(n>1){
+      const nav=el("div","knav");
+      const pv=el("button","btn small","‹");pv.type="button";pv.dataset.nav="-1";pv.dataset.id=c.id;pv.setAttribute("aria-label","Build anterior");
+      const nx=el("button","btn small","›");nx.type="button";nx.dataset.nav="1";nx.dataset.id=c.id;nx.setAttribute("aria-label","Build siguiente");
+      nav.append(pv,el("span",null,(i+1)+" de "+n),nx);slot.appendChild(nav);
+    }
+  }else{
+    const e=el("div","kempty");
+    e.appendChild(el("p",null,gen?"Todavía no hay builds generales.":"Todavía no hay builds."));
+    if(canEditBuilds(c.id)){const nb=el("button","btn small","Crear build");nb.type="button";nb.dataset.create=c.id;e.appendChild(nb);}
+    slot.appendChild(e);
+  }
+  body.appendChild(slot);s.appendChild(body);
+  return s;
+}
 function render(){
   const q=norm(state.q.trim());
   const animate=animateNext;animateNext=false;
@@ -175,30 +215,13 @@ function render(){
   const list=allChars().filter(c=>matches(c,q)).sort((a,b)=>sortMode==="az"?sortKey(a.name).localeCompare(sortKey(b.name),"es"):sortMode==="new"?relOf(b)-relOf(a):relOf(a)-relOf(b));
   const g=$("grid");g.textContent="";
   const genHit=!q||matches(GENERAL,q);
-  if(genHit){
-    const n=buildsOf(GEN).length;
-    const b=el("button","tile gen img"+(n?" has":""));b.type="button";b.dataset.id=GEN;
-    const trio=el("span","trio");GEN_IMGS.forEach(k=>{const s=el("span");if(DEFAULT_IMGS[k])s.style.backgroundImage='url("'+DEFAULT_IMGS[k]+'")';trio.appendChild(s);});b.appendChild(trio);
-    b.appendChild(el("span","rel","Para cualquier asesino"));
-    b.appendChild(el("span","tname","Builds generales"));
-    b.appendChild(el("span","tcount",n?(n===1?"1 build":n+" builds"):"Sin builds todavía"));
-    g.appendChild(b);
-  }
+  if(genHit)g.appendChild(killerSection(GENERAL,q));
   list.forEach(c=>{
-    const n=buildsOf(c.id).length,src=imgSrc(c.id);
-    const b=el("button","tile"+(n?" has":"")+(src?" img":""));b.type="button";b.dataset.id=c.id;
-    if(src){const bg=el("span","bgimg");bg.style.backgroundImage='url("'+src.replace(/"/g,"%22")+'")';b.appendChild(bg);}
-    if(sortMode!=="az")b.appendChild(el("span","rel","Nº "+relOf(c)));
-    const nm=el("span","tname");
-    if(q&&norm(c.name).includes(q)){nm.appendChild(highlight(c.name,q));b.classList.add("found");}else nm.textContent=c.name;
-    b.appendChild(nm);
-    if(animate&&prev&&!prev.has(c.id)){b.classList.add("enter");b.style.animationDelay=Math.min(entered,12)*22+"ms";entered++;}
-    b.appendChild(el("span","tcount",n?(n===1?"1 build":n+" builds"):"Sin builds"));
-    g.appendChild(b);
+    const sec=killerSection(c,q);
+    if(animate&&prev&&!prev.has(c.id)){sec.classList.add("enter");sec.style.animationDelay=Math.min(entered,12)*22+"ms";entered++;}
+    g.appendChild(sec);
   });
-  const only=q&&list.length===1?list[0].id:null;
-  if(only&&only!==lastOnly){const t=g.querySelector(".tile:not(.gen)");if(t){t.style.animationDelay="";t.classList.add("only");}}
-  lastOnly=only;prevIds=list.map(c=>c.id);
+  prevIds=list.map(c=>c.id);
   if(!q){
     const a=el("button","tile add");a.type="button";a.id="addTile";
     a.appendChild(el("span","tname","+ Añadir asesino"));
@@ -274,36 +297,40 @@ function renderPanel(){
   if(gen)$("genNote").textContent=mine?"Estas builds las ve todo el mundo. Solo las administradoras pueden crearlas, editarlas o borrarlas.":"Builds para jugar con cualquier asesino. Solo la administración de la página puede añadirlas; las tuyas publícalas dentro de cada asesino.";
   if(!all.length){box.appendChild(el("p","noBuilds",gen?(mine?"Todavía no hay builds generales. Crea la primera con Nueva build.":"Todavía no hay builds generales."):"Todavía no hay builds para "+c.name+". Crea la primera con Nueva build."));return;}
   if(!list.length){box.appendChild(el("p","noBuilds","Aún no has publicado builds para "+c.name+"."));return;}
-  list.forEach(b=>{
-    const art=el("article","bcard");art.dataset.bid=b.id;
-    art.appendChild(el("h3",null,b.name));
-    const row=el("div","bperks");
-    const perks=(b.perks||[]).slice(0,4);while(perks.length<4)perks.push("");
-    perks.forEach(p=>{
-      const hit=p&&q&&(norm(p).includes(q)||norm(perkLabel(p)).includes(q)||norm(perkOther(p)).includes(q));
-      const f=p?findPerk(p):null,t=p?perkType(p):"";
-      const cell=el("div","bperk"+(hit?" hit":""));
-      if(p)cell.title=perkLabel(p)+(f?" · "+(f.owner||"General"):"");
-      const gem=el("div","gem"+(p?"":" vacant")+(t?" "+t:""));gem.setAttribute("aria-hidden","true");
-      const src=p?perkIconSrc(p):null;
-      if(src){const im=document.createElement("img");im.alt="";im.src=src;gem.appendChild(im);}else if(p)gem.appendChild(el("span",null,initials(perkLabel(p))));
-      cell.append(gem,el("span","pname",p?perkLabel(p):"Vacío"));
-      row.appendChild(cell);
-    });
-    art.appendChild(row);
-    const lines=(b.notes||"").split(/\n+/).map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,"").trim()).filter(Boolean);
-    if(lines.length){const ol=el("ol","bnotes");lines.forEach(l=>ol.appendChild(el("li",null,l)));art.appendChild(ol);}
-    else art.appendChild(el("p","bempty","Sin notas."));
-    const own=!sb||(uid&&b.userId===uid);
-    const act=el("div","bact");
-    if(sb&&b.author)act.appendChild(el("span","bauthor",b.author+(own?" (tú)":"")));
-    const ed=el("button","btn small","Editar");ed.type="button";ed.dataset.act="edit";ed.dataset.bid=b.id;
-    const del=el("button","btn small ghost","Borrar");del.type="button";del.dataset.act="del";del.dataset.bid=b.id;
-    const cp=el("button","btn small","Copiar");cp.type="button";cp.dataset.act="copy";cp.dataset.bid=b.id;
-    if(own&&mine)act.append(ed,cp);else act.append(cp);
-    if(!sb||state.isAdmin)act.append(del);
-    art.appendChild(act);box.appendChild(art);
+  list.forEach(b=>box.appendChild(buildCard(b,{q,uid,mine})));
+}
+function buildCard(b,o){
+  const q=o.q,uid=o.uid;
+  const art=el("article","bcard"+(o.compact?" compact":""));art.dataset.bid=b.id;
+  art.appendChild(el("h3",null,b.name));
+  const row=el("div","bperks");
+  const perks=(b.perks||[]).slice(0,4);while(perks.length<4)perks.push("");
+  perks.forEach(p=>{
+    const hit=p&&q&&(norm(p).includes(q)||norm(perkLabel(p)).includes(q)||norm(perkOther(p)).includes(q));
+    const f=p?findPerk(p):null,t=p?perkType(p):"";
+    const cell=el("div","bperk"+(hit?" hit":""));
+    if(p)cell.title=perkLabel(p)+(f?" · "+(f.owner||"General"):"");
+    const gem=el("div","gem"+(p?"":" vacant")+(t?" "+t:""));gem.setAttribute("aria-hidden","true");
+    const src=p?perkIconSrc(p):null;
+    if(src){const im=document.createElement("img");im.alt="";im.src=src;gem.appendChild(im);}else if(p)gem.appendChild(el("span",null,initials(perkLabel(p))));
+    cell.append(gem,el("span","pname",p?perkLabel(p):"Vacío"));
+    row.appendChild(cell);
   });
+  art.appendChild(row);
+  const lines=(b.notes||"").split(/\n+/).map(l=>l.replace(/^\s*(\d+[.)]|[-•*])\s*/,"").trim()).filter(Boolean);
+  if(lines.length){const ol=el("ol","bnotes");lines.forEach(l=>ol.appendChild(el("li",null,l)));art.appendChild(ol);}
+  else art.appendChild(el("p","bempty","Sin notas."));
+  const own=!sb||(uid&&b.userId===uid);
+  if(o.compact){if(sb&&b.author)art.appendChild(el("p","bby",b.author+(own?" (tú)":"")));return art;}
+  const act=el("div","bact");
+  if(sb&&b.author)act.appendChild(el("span","bauthor",b.author+(own?" (tú)":"")));
+  const ed=el("button","btn small","Editar");ed.type="button";ed.dataset.act="edit";ed.dataset.bid=b.id;
+  const del=el("button","btn small ghost","Borrar");del.type="button";del.dataset.act="del";del.dataset.bid=b.id;
+  const cp=el("button","btn small","Copiar");cp.type="button";cp.dataset.act="copy";cp.dataset.bid=b.id;
+  if(own&&o.mine)act.append(ed,cp);else act.append(cp);
+  if(!sb||state.isAdmin)act.append(del);
+  art.appendChild(act);
+  return art;
 }
 function showForm(build){
   state.editing=build?build.id:"new";
@@ -380,13 +407,13 @@ let dragTile=null;
 function clearDrag(){if(dragTile)dragTile.classList.remove("drop");dragTile=null;}
 $("grid").addEventListener("dragover",e=>{
   if(!canUpload())return;
-  const t=e.target.closest(".tile:not(.add):not(.gen)");if(!t)return;
+  const t=e.target.closest(".ksec:not(.gen)");if(!t)return;
   e.preventDefault();e.dataTransfer.dropEffect="copy";
   if(dragTile!==t){clearDrag();dragTile=t;t.classList.add("drop");}
 });
-$("grid").addEventListener("dragleave",e=>{const t=e.target.closest(".tile");if(t&&t===dragTile&&!t.contains(e.relatedTarget))clearDrag();});
+$("grid").addEventListener("dragleave",e=>{const t=e.target.closest(".ksec");if(t&&t===dragTile&&!t.contains(e.relatedTarget))clearDrag();});
 $("grid").addEventListener("drop",async e=>{
-  const t=e.target.closest(".tile:not(.add):not(.gen)");clearDrag();
+  const t=e.target.closest(".ksec:not(.gen)");clearDrag();
   if(!t||!canUpload())return;
   e.preventDefault();
   const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(!f)return;
@@ -413,9 +440,14 @@ function relOf(c){if(c.rel)return c.rel;const i=allChars().filter(x=>!x.rel).fin
 $("sortSel").value=sortMode;
 $("sortSel").addEventListener("change",e=>{sortMode=e.target.value;try{localStorage.setItem("dbd-sort",sortMode);}catch(err){}render();});
 $("grid").addEventListener("click",e=>{
-  const t=e.target.closest(".tile");if(!t)return;
-  if(t.id==="addTile"){if(sb&&!state.session){openAcc("Para añadir asesinos para todos necesitas hacer login.");return;}if(sb&&!state.nick){openAcc();return;}$("addForm").hidden=false;$("addName").focus();return;}
-  openPanel(t.dataset.id);
+  const nav=e.target.closest("[data-nav]");
+  if(nav){const id=nav.dataset.id;carousel[id]=(carousel[id]||0)+Number(nav.dataset.nav);render();const b=$("grid").querySelector('.ksec[data-id="'+id+'"] [data-nav="'+nav.dataset.nav+'"]');if(b)b.focus();return;}
+  const cr=e.target.closest("[data-create]");
+  if(cr){openPanel(cr.dataset.create);startNewBuild();return;}
+  const op=e.target.closest("[data-open]");
+  if(op){openPanel(op.dataset.open);return;}
+  const t=e.target.closest("#addTile");if(!t)return;
+  {if(sb&&!state.session){openAcc("Para añadir asesinos para todos necesitas hacer login.");return;}if(sb&&!state.nick){openAcc();return;}$("addForm").hidden=false;$("addName").focus();}
 });
 $("addCancel").onclick=()=>{$("addForm").hidden=true;$("addName").value="";};
 $("addForm").addEventListener("submit",e=>{
