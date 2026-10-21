@@ -363,3 +363,6 @@ header.bar .hbtns{grid-area:auto;justify-self:end;flex-direction:row;align-items
   #accBtn{max-width:130px}
 }
 @media (max-width:360px){header.bar .hbtns{justify-self:end}header.bar .hbtns .btn{flex:none}}
+#themeBtn{width:36px;padding:0}
+:root[data-theme="dark"] #themeBtn .i-moon,:root[data-theme="light"] #themeBtn .i-sun{display:none}
+@media (max-width:640px){header.bar .hbtns #themeBtn{width:36px;padding:0}}

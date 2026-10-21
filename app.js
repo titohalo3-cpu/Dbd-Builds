@@ -874,5 +874,10 @@ document.querySelectorAll(".seg").forEach(seg=>{
   seg.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.dataset.v===sel.value)return;sel.value=b.dataset.v;sel.dispatchEvent(new Event("change"));paint();});
   paint();
 });
+/* Modo claro / oscuro (oscuro por defecto) */
+const themeBtn=$("themeBtn");
+function paintTheme(){const d=document.documentElement.dataset.theme!=="light";themeBtn.setAttribute("aria-label",d?"Cambiar a modo claro":"Cambiar a modo oscuro");themeBtn.title=d?"Modo claro":"Modo oscuro";}
+themeBtn.addEventListener("click",()=>{const t=document.documentElement.dataset.theme==="light"?"dark":"light";document.documentElement.dataset.theme=t;try{localStorage.setItem("dbd-tema",t);}catch(e){}paintTheme();});
+paintTheme();
 init();
 })();
