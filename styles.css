@@ -455,6 +455,19 @@ header.bar{padding-left:max(20px,calc(50vw - 840px));padding-right:max(20px,calc
 /* Cambio de build en la rejilla: deslizamiento corto y suave */
 @keyframes cardNext{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
 @keyframes cardPrev{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
-.bcard.in-next{animation:cardNext .32s cubic-bezier(.22,.8,.3,1)}
-.bcard.in-prev{animation:cardPrev .32s cubic-bezier(.22,.8,.3,1)}
+.bcard.in-next{animation:cardNext .34s cubic-bezier(.2,.8,.25,1)}
+.bcard.in-prev{animation:cardPrev .34s cubic-bezier(.2,.8,.25,1)}
 @media (prefers-reduced-motion: reduce){.bcard.in-next,.bcard.in-prev{animation:fade .2s ease-out}}
+
+/* Hover suave en builds y asesinos */
+.bcard{transition:transform .35s cubic-bezier(.2,.8,.25,1),box-shadow .35s ease,border-color .35s ease}
+.bcard:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--blood) 55%,var(--line));box-shadow:0 14px 28px -18px rgba(0,0,0,.65)}
+.gem{transition:transform .3s cubic-bezier(.2,.8,.25,1),filter .3s ease}
+.bperk:hover .gem{transform:scale(1.08);filter:brightness(1.12)}
+.kimg img{transition:transform .6s cubic-bezier(.2,.8,.25,1),filter .6s ease}
+.ksec:hover .kimg img,.kimg:focus-visible img{transform:scale(1.05);filter:brightness(1.08)}
+.ktitle span{transition:color .3s ease}
+.ksec:hover .ktitle span{color:var(--blood)}
+.ktitle::before,.ktitle::after{transition:flex-grow .45s cubic-bezier(.2,.8,.25,1)}
+.ksec:hover .ktitle::before,.ksec:hover .ktitle::after{flex-grow:1.25}
+@media (prefers-reduced-motion: reduce){.bcard,.gem,.kimg img,.ktitle span,.ktitle::before,.ktitle::after{transition:none}.bcard:hover,.bperk:hover .gem,.ksec:hover .kimg img{transform:none}}

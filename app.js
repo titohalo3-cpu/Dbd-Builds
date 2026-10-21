@@ -443,13 +443,24 @@ $("grid").addEventListener("click",e=>{
   const nav=e.target.closest("[data-nav]");
   if(nav){
     const id=nav.dataset.id,dir=Number(nav.dataset.nav),sec=nav.closest(".ksec"),c=charById(id);
+    if(sec&&sec.dataset.busy)return;
     carousel[id]=(carousel[id]||0)+dir;
     if(!sec||!c){render();return;}
-    // Solo se cambia la tarjeta de esta sección, con un deslizamiento corto.
-    const fresh=killerSection(c,norm(state.q.trim())).querySelector(".kcard");
-    const card=fresh.querySelector(".bcard");if(card)card.classList.add(dir>0?"in-next":"in-prev");
-    sec.querySelector(".kcard").replaceWith(fresh);
-    const b=fresh.querySelector('[data-nav="'+dir+'"]');if(b)b.focus();
+    // Solo cambia la tarjeta de esta sección: la vieja sale deslizándose y la nueva entra por el otro lado.
+    const swap=()=>{
+      const cur=sec.querySelector(".kcard");if(!cur)return;
+      const fresh=killerSection(c,norm(state.q.trim())).querySelector(".kcard");
+      const card=fresh.querySelector(".bcard");if(card)card.classList.add(dir>0?"in-next":"in-prev");
+      cur.replaceWith(fresh);
+      const b=fresh.querySelector('[data-nav="'+dir+'"]');if(b)b.focus();
+    };
+    const old=sec.querySelector(".kcard .bcard");
+    if(!old||!old.animate||matchMedia("(prefers-reduced-motion: reduce)").matches){swap();return;}
+    sec.dataset.busy="1";
+    let done=false;
+    const finish=()=>{if(done)return;done=true;delete sec.dataset.busy;swap();};
+    old.animate([{opacity:1,transform:"none"},{opacity:0,transform:"translateX("+(dir>0?-14:14)+"px)"}],{duration:150,easing:"cubic-bezier(.4,0,1,1)",fill:"forwards"}).onfinish=finish;
+    setTimeout(finish,190);
     return;
   }
   const cr=e.target.closest("[data-create]");
